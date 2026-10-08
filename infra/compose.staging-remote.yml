@@ -1,0 +1,87 @@
+# Staging remoto isolado (Round 2). Partilha o host com produção: sem portas públicas,
+# sem redes de outros projetos, limites de memória e CPU explícitos.
+# Uso: docker compose --env-file .env.staging -f infra/compose.staging-remote.yml up -d --build --wait
+name: ai-waas-staging
+services:
+  postgres:
+    image: postgres:17.6@sha256:00bc86618629af00d2937fdc5a5d63db3ff8450acf52f0636ec813c7f4902929
+    environment:
+      POSTGRES_USER: waas
+      POSTGRES_DB: waas_staging
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?required}
+    volumes: ["database:/var/lib/postgresql/data"]
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U waas -d waas_staging"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    mem_limit: 384m
+    cpus: 0.5
+    restart: unless-stopped
+  redis:
+    image: redis:7.4.5-alpine@sha256:bb186d083732f669da90be8b0f975a37812b15e913465bb14d845db72a4e3e08
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "96mb", "--maxmemory-policy", "noeviction"]
+    volumes: ["queue:/data"]
+    networks: [internal]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    mem_limit: 128m
+    cpus: 0.25
+    restart: unless-stopped
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile
+    image: atlashub-waas:staging
+    env_file: ../.env.staging
+    environment:
+      DATABASE_URL: postgresql://waas:${DB_PASSWORD}@postgres:5432/waas_staging
+      REDIS_HOST: redis
+      BIND_HOST: 0.0.0.0
+    ports: ["127.0.0.1:14000:4000"]
+    networks: [internal, egress]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+    mem_limit: 384m
+    cpus: 0.5
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+  worker:
+    image: atlashub-waas:staging
+    command: ["node", "dist/services/worker/src/main.js"]
+    env_file: ../.env.staging
+    environment:
+      DATABASE_URL: postgresql://waas:${DB_PASSWORD}@postgres:5432/waas_staging
+      REDIS_HOST: redis
+    networks: [internal, egress]
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      api: {condition: service_healthy}
+    mem_limit: 384m
+    cpus: 0.5
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+networks:
+  internal:
+    internal: true
+  egress: {}
+volumes:
+  database:
+  queue:

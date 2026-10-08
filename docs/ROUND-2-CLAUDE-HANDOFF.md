@@ -1,7 +1,5 @@
-# Documento substituído
+# Round 2 — redirecionamento
 
-A missão Round 2 passou a ser liderada pelo **MAX (Hermes com motor Codex)**, não pelo Claude Code.
+Por decisão do Founder (2026-10-08), a condução técnica do Round 2 é do **Claude Code**, seguindo o mandato, os gates e a política de autonomia de [ROUND-2-MAX-HERMES-CODEX.md](ROUND-2-MAX-HERMES-CODEX.md).
 
-**Documento canónico:** [ROUND-2-MAX-HERMES-CODEX.md](ROUND-2-MAX-HERMES-CODEX.md).
-
-Este ficheiro existe apenas como redirecionamento para referências anteriores.
+**Estado atual:** [ROUND-2-STATUS.md](ROUND-2-STATUS.md).
