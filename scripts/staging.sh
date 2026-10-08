@@ -12,3 +12,4 @@ npm run db:deploy
 node scripts/runtime-role.mjs
 npm run db:seed
 npm run build
+node scripts/seed-roles.mjs

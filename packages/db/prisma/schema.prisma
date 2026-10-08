@@ -181,3 +181,16 @@ model Assessment {
  consent Boolean
  createdAt DateTime @default(now())
 }
+// Round 2: stateful stand-in for customers' external systems used by ROLE-002..008 in staging.
+model SandboxRecord {
+ id String @id
+ tenantId String
+ kind String
+ key String
+ data Json
+ version Int @default(0)
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ @@unique([tenantId,kind,key])
+ @@index([tenantId,kind])
+}

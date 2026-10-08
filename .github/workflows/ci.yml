@@ -33,6 +33,7 @@ jobs:
           npm run test:e2e
           node --test tests/database-security.mjs
           node --test tests/runtime-rls.mjs
+          node --test tests/roles.e2e.mjs
           node scripts/readiness-recovery.mjs
           scripts/backup-restore.sh
       - uses: actions/upload-artifact@v4

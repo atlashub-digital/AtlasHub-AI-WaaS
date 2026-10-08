@@ -1,6 +1,8 @@
 import { z } from 'zod';
-export const inbound = z.object({event_id:z.string().min(1).max(120),channel_binding_id:z.string().min(1).max(120),timestamp:z.string().datetime(),payload:z.object({conversation_ref:z.string().min(1).max(120),intent_text:z.string().max(2000),slot_id:z.string().max(120).optional()}).strict()}).strict();
-export const deploymentInput = z.object({tenantId:z.string(),roleId:z.string(),packReleaseId:z.string(),config:z.object({clinic_name:z.string().min(1),handoff_queue:z.string().min(1)}).strict(),limits:z.object({dailyRuns:z.number().int().min(1).max(10000),alertAt:z.number().int().min(1).max(10000)})}).strict();
+export const inbound = z.object({event_id:z.string().min(1).max(120),channel_binding_id:z.string().min(1).max(120),timestamp:z.string().datetime(),payload:z.object({conversation_ref:z.string().min(1).max(120),intent_text:z.string().max(2000),slot_id:z.string().max(120).optional(),locale:z.enum(['pt-PT','pt-BR','en','es']).optional(),
+ // Structured channel data for ROLE-002..008 (bounded; validated again per tool by the gateway).
+ data:z.record(z.string().max(60),z.unknown()).refine(d=>Object.keys(d).length<=30&&JSON.stringify(d).length<=4000,'payload data too large').optional()}).strict()}).strict();
+export const deploymentInput = z.object({tenantId:z.string(),roleId:z.enum(['ROLE-001','ROLE-002','ROLE-003','ROLE-004','ROLE-005','ROLE-006','ROLE-007','ROLE-008']),packReleaseId:z.string(),config:z.object({clinic_name:z.string().min(1).optional(),business_name:z.string().min(1).max(120).optional(),handoff_queue:z.string().min(1),locale:z.enum(['pt-PT','pt-BR','en','es']).optional(),n8n_tools:z.array(z.string().max(60)).max(20).optional()}).strict().refine(c=>!!(c.clinic_name??c.business_name),'business name required'),limits:z.object({dailyRuns:z.number().int().min(1).max(10000),alertAt:z.number().int().min(1).max(10000)})}).strict();
 export const toolInputs:Record<string,z.ZodType>={
  'agenda.get_appointment':z.object({appointment_id:z.string()}).strict(),
  'agenda.find_slots':z.object({appointment_id:z.string(),preference:z.string()}).strict(),

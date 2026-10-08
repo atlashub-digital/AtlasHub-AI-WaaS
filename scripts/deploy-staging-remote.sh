@@ -41,6 +41,7 @@ $COMPOSE up -d --wait postgres redis
 $COMPOSE run --rm --no-deps -e DATABASE_URL="$OWNER_URL" api node scripts/migrate.mjs
 $COMPOSE run --rm --no-deps -e DATABASE_URL="$OWNER_URL" -e RUNTIME_DB_PASSWORD api node scripts/runtime-role.mjs
 $COMPOSE run --rm --no-deps -e DATABASE_URL="$OWNER_URL" api node scripts/seed.mjs
+$COMPOSE run --rm --no-deps -e DATABASE_URL="$OWNER_URL" api node scripts/seed-roles.mjs
 $COMPOSE up -d --wait --force-recreate api worker
 $COMPOSE ps
 curl -fsS http://127.0.0.1:14000/health && echo && curl -fsS http://127.0.0.1:14000/ready && echo
