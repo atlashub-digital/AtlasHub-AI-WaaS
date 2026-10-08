@@ -1,0 +1,350 @@
+{
+  "$schema": "../../schema/pack.schema.json",
+  "schemaVersion": 1,
+  "id": "PACK-001",
+  "slug": "clinic-appointment-confirmation",
+  "version": "0.1.0",
+  "status": "demo",
+  "name": "Confirmação de consultas",
+  "summary": "Lembra, confirma e remarca consultas pelo WhatsApp, liberta vagas para a lista de espera e passa para a equipa tudo o que for clínico.",
+  "locale": "pt-BR",
+  "owner": "max",
+  "segments": [
+    "saude",
+    "servicos"
+  ],
+  "equation": [
+    "receita",
+    "custos",
+    "controlo"
+  ],
+  "channels": [
+    "whatsapp"
+  ],
+  "commercial": {
+    "cloud": true,
+    "onsite": true
+  },
+  "steps": [
+    {
+      "id": "trigger",
+      "label": "Gatilho",
+      "description": "Consulta nas próximas 24 h"
+    },
+    {
+      "id": "reminder",
+      "label": "Lembrete",
+      "description": "Mensagem autorizada pelo paciente"
+    },
+    {
+      "id": "interpret",
+      "label": "Interpretar",
+      "description": "Intenção da resposta"
+    },
+    {
+      "id": "rules",
+      "label": "Regras e limites",
+      "description": "Agenda, horários e política da clínica"
+    },
+    {
+      "id": "human",
+      "label": "Revisão humana",
+      "description": "Só quando há exceção"
+    },
+    {
+      "id": "done",
+      "label": "Concluir",
+      "description": "Agenda e registo atualizados"
+    }
+  ],
+  "runtime": {
+    "agent": "hermes",
+    "skills": [
+      "skills/agent.md",
+      "skills/guardrails.md"
+    ],
+    "workflows": [
+      "workflows/README.md"
+    ]
+  },
+  "tools": [
+    {
+      "id": "agenda.get_appointment",
+      "description": "Lê a consulta a confirmar (paciente, data, hora, profissional).",
+      "input": {
+        "appointment_id": "string"
+      },
+      "output": {
+        "patient_first_name": "string",
+        "starts_at": "datetime",
+        "professional": "string",
+        "status": "string"
+      },
+      "binding": {
+        "prod": "n8n:/webhook/pack-001/agenda-get",
+        "demo": "mock:agenda.get_appointment"
+      }
+    },
+    {
+      "id": "agenda.find_slots",
+      "description": "Procura horários livres dentro da janela de remarcação.",
+      "input": {
+        "appointment_id": "string",
+        "preference": "string"
+      },
+      "output": {
+        "slots": "datetime[]"
+      },
+      "binding": {
+        "prod": "n8n:/webhook/pack-001/agenda-slots",
+        "demo": "mock:agenda.find_slots"
+      }
+    },
+    {
+      "id": "agenda.update_status",
+      "description": "Marca a consulta como confirmada, remarcada ou cancelada.",
+      "input": {
+        "appointment_id": "string",
+        "status": "string",
+        "new_starts_at": "datetime?"
+      },
+      "output": {
+        "ok": "boolean"
+      },
+      "binding": {
+        "prod": "n8n:/webhook/pack-001/agenda-update",
+        "demo": "mock:agenda.update_status"
+      }
+    },
+    {
+      "id": "waitlist.offer_slot",
+      "description": "Oferece a vaga libertada à lista de espera.",
+      "input": {
+        "starts_at": "datetime"
+      },
+      "output": {
+        "offered_to": "number"
+      },
+      "binding": {
+        "prod": "n8n:/webhook/pack-001/waitlist-offer",
+        "demo": "mock:waitlist.offer_slot"
+      }
+    },
+    {
+      "id": "team.handoff",
+      "description": "Passa a conversa para uma pessoa da clínica, com prioridade e resumo.",
+      "input": {
+        "conversation_id": "string",
+        "reason": "string",
+        "priority": "string"
+      },
+      "output": {
+        "task_id": "string"
+      },
+      "binding": {
+        "prod": "n8n:/webhook/pack-001/handoff",
+        "demo": "mock:team.handoff"
+      }
+    }
+  ],
+  "integrations": [
+    {
+      "id": "agenda",
+      "kind": "calendar",
+      "required": true,
+      "description": "Sistema de agenda da clínica com API ou exportação diária."
+    },
+    {
+      "id": "whatsapp",
+      "kind": "channel",
+      "required": true,
+      "description": "Número de WhatsApp da clínica via Atendimento.Center."
+    },
+    {
+      "id": "waitlist",
+      "kind": "list",
+      "required": false,
+      "description": "Lista de espera (folha, CRM ou agenda)."
+    }
+  ],
+  "config": [
+    {
+      "key": "clinic_name",
+      "type": "string",
+      "required": true,
+      "description": "Nome usado nas mensagens."
+    },
+    {
+      "key": "reminder_hours_before",
+      "type": "integer",
+      "default": 24,
+      "description": "Antecedência do lembrete."
+    },
+    {
+      "key": "reschedule_window_days",
+      "type": "integer",
+      "default": 7,
+      "description": "Janela para propor novos horários."
+    },
+    {
+      "key": "max_slots_offered",
+      "type": "integer",
+      "default": 2,
+      "description": "Quantos horários propor de cada vez."
+    },
+    {
+      "key": "handoff_queue",
+      "type": "string",
+      "required": true,
+      "description": "Fila ou pessoa que recebe as exceções."
+    }
+  ],
+  "guardrails": [
+    {
+      "id": "no-clinical-advice",
+      "rule": "Nunca dar aconselhamento clínico, diagnóstico ou indicação de medicação.",
+      "action": "handoff"
+    },
+    {
+      "id": "urgency",
+      "rule": "Perante sinais de urgência, indicar atendimento de urgência e passar à equipa com prioridade alta.",
+      "action": "handoff"
+    },
+    {
+      "id": "consent",
+      "rule": "Só enviar lembretes a pacientes com consentimento registado.",
+      "action": "block"
+    },
+    {
+      "id": "rules-only",
+      "rule": "Só remarcar dentro das regras da agenda; fora delas, propor contacto com a receção.",
+      "action": "handoff"
+    }
+  ],
+  "metrics": {
+    "inputs": [
+      {
+        "key": "appointments_per_month",
+        "label": "Consultas por mês",
+        "unit": "",
+        "default": 800,
+        "min": 0,
+        "max": 20000,
+        "step": 50
+      },
+      {
+        "key": "no_show_rate",
+        "label": "Taxa de faltas",
+        "unit": "%",
+        "default": 12,
+        "min": 0,
+        "max": 60,
+        "step": 1
+      },
+      {
+        "key": "no_show_reduction",
+        "label": "Redução hipotética de faltas",
+        "unit": "%",
+        "default": 30,
+        "min": 0,
+        "max": 90,
+        "step": 5
+      },
+      {
+        "key": "minutes_per_manual_confirmation",
+        "label": "Minutos por confirmação manual",
+        "unit": "min",
+        "default": 3,
+        "min": 0,
+        "max": 30,
+        "step": 1
+      },
+      {
+        "key": "avg_appointment_value",
+        "label": "Valor médio da consulta",
+        "unit": "BRL",
+        "default": 200,
+        "min": 0,
+        "max": 5000,
+        "step": 10
+      }
+    ],
+    "outputs": [
+      {
+        "key": "no_shows",
+        "label": "Faltas por mês com os números atuais",
+        "formula": "round(appointments_per_month * no_show_rate / 100)"
+      },
+      {
+        "key": "recovered_appointments",
+        "label": "Consultas/mês potencialmente recuperadas",
+        "formula": "round(no_shows * no_show_reduction / 100)"
+      },
+      {
+        "key": "recovered_revenue",
+        "label": "Receita/mês associada",
+        "unit": "BRL",
+        "formula": "recovered_appointments * avg_appointment_value"
+      },
+      {
+        "key": "manual_hours",
+        "label": "Horas/mês de confirmações manuais hoje",
+        "unit": "h",
+        "formula": "round(appointments_per_month * minutes_per_manual_confirmation / 60)"
+      }
+    ],
+    "disclaimer": "Hipótese calculada com os números do lead. Não inclui implementação, ferramentas nem manutenção. Não é uma previsão nem um resultado garantido."
+  },
+  "demo": {
+    "fixtures": "demo/fixtures/clinic.json",
+    "mocks": "demo/mocks.json",
+    "scenarios": [
+      "demo/scenarios/01-confirm.json",
+      "demo/scenarios/02-reschedule.json",
+      "demo/scenarios/03-clinical-exception.json"
+    ],
+    "labels": {
+      "header": "Clínica Exemplo · WhatsApp",
+      "agent": "AGENTE · CLÍNICA EXEMPLO",
+      "customer": "ANA · PACIENTE FICTÍCIA"
+    }
+  },
+  "tests": "tests/acceptance.json",
+  "compliance": {
+    "dataClasses": [
+      "contacto",
+      "agenda"
+    ],
+    "excludes": [
+      "dados clínicos",
+      "diagnósticos",
+      "prescrições"
+    ],
+    "lgpd": [
+      "Consentimento para lembretes por WhatsApp",
+      "Retenção mínima das conversas",
+      "Separação entre dados administrativos e clínicos"
+    ]
+  },
+  "clara": {
+    "intro": [
+      "Olá, sou a Clara. Pelo que me contou, a clínica perde consultas por faltas e as confirmações ainda são feitas à mão.",
+      "Preparei o pack Confirmação de consultas com um paciente fictício. Ajuste os números da clínica mais abaixo e carregue em Executar."
+    ],
+    "allDone": "Já viu os três cenários. O passo seguinte é medir isto com os números reais da clínica.",
+    "context": [
+      {
+        "label": "Segmento",
+        "value": "Clínica · Saúde"
+      },
+      {
+        "label": "Canal",
+        "value": "WhatsApp"
+      },
+      {
+        "label": "Dor principal",
+        "value": "Faltas e confirmações manuais"
+      }
+    ]
+  }
+}

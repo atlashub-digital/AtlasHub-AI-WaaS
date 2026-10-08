@@ -1,0 +1,1050 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AtlasHub AI Workforce staging API",
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:4000",
+      "description": "Local synthetic staging only"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "WebhookHMAC": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Atlas-Signature"
+      }
+    },
+    "schemas": {
+      "Inbound": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "event_id",
+          "channel_binding_id",
+          "timestamp",
+          "payload"
+        ],
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "channel_binding_id": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "payload": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "conversation_ref",
+              "intent_text"
+            ],
+            "properties": {
+              "conversation_ref": {
+                "type": "string"
+              },
+              "intent_text": {
+                "type": "string",
+                "maxLength": 2000
+              },
+              "slot_id": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Assessment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "business",
+          "need",
+          "consent"
+        ],
+        "properties": {
+          "business": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "need": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "consent": {
+            "const": true
+          }
+        }
+      },
+      "Decision": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tenant",
+          "decision"
+        ],
+        "properties": {
+          "tenant": {
+            "type": "string"
+          },
+          "decision": {
+            "enum": [
+              "approved",
+              "rejected"
+            ]
+          }
+        }
+      },
+      "Deployment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tenantId",
+          "roleId",
+          "packReleaseId",
+          "config",
+          "limits"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "roleId": {
+            "type": "string"
+          },
+          "packReleaseId": {
+            "type": "string"
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "clinic_name",
+              "handoff_queue"
+            ],
+            "properties": {
+              "clinic_name": {
+                "type": "string"
+              },
+              "handoff_queue": {
+                "type": "string"
+              }
+            }
+          },
+          "limits": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "dailyRuns",
+              "alertAt"
+            ],
+            "properties": {
+              "dailyRuns": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "alertAt": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "get__health",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "operationId": "get__ready",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        }
+      }
+    },
+    "/v1/roles": {
+      "get": {
+        "operationId": "get__v1_roles",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        }
+      }
+    },
+    "/v1/assessments": {
+      "post": {
+        "operationId": "post__v1_assessments",
+        "responses": {
+          "201": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Assessment"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenants": {
+      "post": {
+        "operationId": "post__v1_tenants",
+        "responses": {
+          "201": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "slug",
+                  "name"
+                ],
+                "properties": {
+                  "slug": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenants/{id}/memberships": {
+      "post": {
+        "operationId": "post__v1_tenants_id_memberships",
+        "responses": {
+          "201": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "userId",
+                  "role"
+                ],
+                "properties": {
+                  "userId": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "enum": [
+                      "tenant_user",
+                      "tenant_admin"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenants/{id}/deployments": {
+      "get": {
+        "operationId": "get__v1_tenants_id_deployments",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/v1/deployments": {
+      "post": {
+        "operationId": "post__v1_deployments",
+        "responses": {
+          "201": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Deployment"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/deployments/{id}/transition": {
+      "post": {
+        "operationId": "post__v1_deployments_id_transition",
+        "responses": {
+          "201": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "state"
+                ],
+                "properties": {
+                  "state": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/deployments/{id}/pause": {
+      "post": {
+        "operationId": "post__v1_deployments_id_pause",
+        "responses": {
+          "201": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ]
+      }
+    },
+    "/v1/inbound/{provider}": {
+      "post": {
+        "operationId": "post__v1_inbound_provider",
+        "responses": {
+          "202": {
+            "description": "Accepted"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "WebhookHMAC": []
+          }
+        ],
+        "description": "HMAC SHA-256 hex over exact UTF-8 raw body; timestamp within 5 minutes; event_id is durable idempotency key. Signed duplicate returns existing run without duplicate effect.",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "sandbox"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Inbound"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs": {
+      "get": {
+        "operationId": "get__v1_runs",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Checked against server-side active membership; required for multiple memberships"
+          }
+        ]
+      }
+    },
+    "/v1/runs/{id}": {
+      "get": {
+        "operationId": "get__v1_runs_id",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tenant",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Checked against server-side active membership; required for multiple memberships"
+          }
+        ]
+      }
+    },
+    "/v1/approvals": {
+      "get": {
+        "operationId": "get__v1_approvals",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Checked against server-side active membership; required for multiple memberships"
+          }
+        ]
+      }
+    },
+    "/v1/approvals/{id}/decide": {
+      "post": {
+        "operationId": "post__v1_approvals_id_decide",
+        "responses": {
+          "201": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Decision"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/usage": {
+      "get": {
+        "operationId": "get__v1_usage",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Checked against server-side active membership; required for multiple memberships"
+          }
+        ]
+      }
+    },
+    "/v1/ops/incidents": {
+      "get": {
+        "operationId": "get__v1_ops_incidents",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Checked against server-side active membership; required for multiple memberships"
+          }
+        ]
+      }
+    },
+    "/v1/ops/metrics": {
+      "get": {
+        "operationId": "get__v1_ops_metrics",
+        "responses": {
+          "200": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Checked against server-side active membership; required for multiple memberships"
+          }
+        ]
+      }
+    },
+    "/v1/ops/runs/{id}/retry": {
+      "post": {
+        "operationId": "post__v1_ops_runs_id_retry",
+        "responses": {
+          "201": {
+            "description": "Success"
+          },
+          "400": {
+            "description": "Invalid schema or transition"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "403": {
+            "description": "Policy or role denied"
+          },
+          "404": {
+            "description": "Scoped resource absent"
+          },
+          "429": {
+            "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        },
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "tenant"
+                ],
+                "properties": {
+                  "tenant": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
