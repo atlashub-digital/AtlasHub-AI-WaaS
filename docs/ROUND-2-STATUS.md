@@ -67,3 +67,23 @@ A auditoria detalhada das VPS fica no repositório privado `atlas-ops`, porque e
 4. **Riscos:** as integrações reais (CRM, email, ERP, loja, ATS, redes sociais) ainda são sandboxes; o n8n existe mas os workflows por tool não estão ativos; a IA não foi exercitada com chave real (falta `ANTHROPIC_API_KEY` no staging).
 5. **Bloqueios:** ativação de workflows n8n (precisa de acesso de owner ao n8n ou de autorização para reiniciar o serviço); Auth Supabase real (utilizadores de teste); chave da API Anthropic para testar a IA.
 6. **Próxima ação:** packs 004–008 no `atlas-agent-packs`; catálogo da App com os 8 roles em demo funcional; workflows n8n; Auth Supabase; Fase B (CRM/catálogo comercial).
+
+## Checkpoint 6 — 2026-10-08
+
+1. **Verificado:**
+   - Staging em Supabase (`ai-waas-supabase`): API e worker no Supabase pelo pooler como `waas_runtime`, Auth real por JWKS ES256.
+   - IA via OpenRouter (modelo gratuito) em staging, com dados sintéticos.
+2. **Alterado:**
+   - `infra/compose.supabase-staging.yml` e `scripts/supabase-staging-setup.sh`: configuração a partir de ficheiros de chaves `0600` e 4 utilizadores de teste no Supabase Auth.
+   - Memberships desses utilizadores nos tenants A/B.
+   - Provider `openrouter` em `llm.ts`.
+   - Primeiro workflow n8n versionado (`infra/n8n/`) e `scripts/n8n-staging-setup.sh` (importa e ativa pela API do n8n, sem reinício).
+3. **Testes:**
+   - `tests/supabase-auth.mjs` **4/4**: isolamento A/B com sessões reais; membro só de leitura sem escrita; tokens forjados ou alterados e ausência de token → 401; refresh e logout (o refresh deixa de funcionar depois do logout); ROLE-001 ponta a ponta sobre o Supabase com RLS.
+   - IA: mensagem em inglês fora das regras → `meeting` (0,95); injection → `unknown`; rascunho gerado (sujeito a aprovação).
+   - GitHub Actions: **PASS** ([run 37755632476](https://github.com/atlashub-digital/AtlasHub-AI-WaaS/actions/runs/37755632476)).
+4. **Riscos:**
+   - Os tokens de acesso continuam válidos até expirarem depois do logout (JWT sem estado); a revogação de membership é imediata no servidor.
+   - Modelos gratuitos do OpenRouter podem registar pedidos: só dados sintéticos.
+5. **Bloqueios:** a importação e ativação do workflow n8n foram recusadas pela política de permissões da sessão (serviço partilhado); o script fica pronto para execução manual.
+6. **Próxima ação:** correr `scripts/n8n-staging-setup.sh`; provisionar a ROLE-006 no Supabase com `n8n_tools: ["research.collect"]` e testar o caminho worker → n8n → feeds; Fase B (CRM/catálogo comercial).
