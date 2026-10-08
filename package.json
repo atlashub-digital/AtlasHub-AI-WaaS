@@ -1,0 +1,41 @@
+{
+  "name": "@atlashub/ai-waas",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test tests/*.test.mjs",
+    "check": "npm run build && npm test",
+    "api": "node dist/services/api/src/main.js",
+    "worker": "node dist/services/worker/src/main.js",
+    "db:generate": "prisma generate --schema packages/db/prisma/schema.prisma",
+    "db:deploy": "node scripts/migrate.mjs",
+    "db:seed": "node scripts/seed.mjs",
+    "test:e2e": "node --test tests/e2e.mjs"
+  },
+  "dependencies": {
+    "@nestjs/common": "11.1.6",
+    "@nestjs/core": "11.1.6",
+    "@nestjs/platform-express": "11.1.6",
+    "@prisma/adapter-pg": "6.16.2",
+    "@prisma/client": "6.16.2",
+    "bullmq": "5.58.5",
+    "ioredis": "5.7.0",
+    "jose": "6.1.0",
+    "pg": "8.16.3",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2",
+    "zod": "4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "24.5.2",
+    "openapi-typescript": "7.9.1",
+    "playwright-core": "1.55.1",
+    "prisma": "6.16.2",
+    "typescript": "5.9.2"
+  }
+}

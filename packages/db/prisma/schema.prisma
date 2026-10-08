@@ -1,0 +1,183 @@
+generator client {
+ provider = "prisma-client-js"
+ engineType = "client"
+}
+datasource db {
+ provider = "postgresql"
+ url = env("DATABASE_URL")
+}
+model Tenant {
+ id String @id
+ slug String @unique
+ name String
+ status String @default("active")
+ createdAt DateTime @default(now())
+}
+model Membership {
+ id String @id @default(uuid())
+ tenantId String
+ userId String
+ role String
+ status String @default("active")
+ @@unique([tenantId,userId])
+}
+model Role {
+ id String @id
+ slug String @unique
+ name String
+ commercialState String @default("demo")
+}
+model PackRelease {
+ id String @id
+ packId String
+ version String
+ sha String
+ manifest Json
+ status String
+ @@unique([packId,version,sha])
+}
+model Deployment {
+ id String @id @default(uuid())
+ tenantId String
+ roleId String
+ packReleaseId String
+ state String @default("sandbox")
+ config Json
+ limits Json
+ createdAt DateTime @default(now())
+ updatedAt DateTime @updatedAt
+ @@index([tenantId])
+}
+model ToolGrant {
+ id String @id @default(uuid())
+ tenantId String
+ deploymentId String
+ toolId String
+ enabled Boolean @default(false)
+ policy Json
+ @@unique([deploymentId,toolId])
+ @@index([tenantId])
+}
+model ChannelBinding {
+ id String @id
+ tenantId String
+ deploymentId String
+ provider String
+ inboxExternalId String
+ status String @default("active")
+ @@index([tenantId])
+}
+model TaskRun {
+ id String @id @default(uuid())
+ tenantId String
+ deploymentId String
+ externalEventId String
+ idempotencyKey String
+ correlationId String
+ state String @default("queued")
+ input Json
+ result Json?
+ attempts Int @default(0)
+ startedAt DateTime @default(now())
+ finishedAt DateTime?
+ costEstimate Decimal @default(0)
+ @@unique([deploymentId,idempotencyKey])
+ @@index([tenantId,state,startedAt])
+}
+model TaskEvent {
+ id String @id @default(uuid())
+ tenantId String
+ runId String
+ type String
+ safePayload Json
+ createdAt DateTime @default(now())
+ @@index([tenantId,runId])
+}
+model Approval {
+ id String @id @default(uuid())
+ tenantId String
+ runId String @unique
+ requestedAction String
+ safeContext Json
+ state String @default("pending")
+ assigneeId String?
+ expiresAt DateTime
+ resolvedAt DateTime?
+ @@index([tenantId])
+}
+model UsageRecord {
+ id String @id @default(uuid())
+ tenantId String
+ runId String @unique
+ metric String
+ quantity Int
+ unit String
+ estimatedCost Decimal
+ currency String
+ createdAt DateTime @default(now())
+ @@index([tenantId])
+}
+model Incident {
+ id String @id @default(uuid())
+ tenantId String
+ deploymentId String
+ runId String?
+ severity String
+ state String @default("open")
+ reason String
+ ownerId String?
+ openedAt DateTime @default(now())
+ closedAt DateTime?
+ @@index([tenantId])
+}
+model AuditEvent {
+ id String @id @default(uuid())
+ tenantId String
+ actorId String
+ action String
+ objectId String
+ at DateTime @default(now())
+ @@index([tenantId])
+}
+model IntegrationConnection {
+ id String @id @default(uuid())
+ tenantId String
+ provider String
+ secretRef String
+ status String
+ @@index([tenantId])
+}
+model Appointment {
+ id String @id
+ tenantId String
+ conversationRef String
+ startsAt DateTime
+ status String @default("scheduled")
+ consent Boolean @default(false)
+ version Int @default(0)
+ @@unique([tenantId,conversationRef])
+ @@index([tenantId])
+}
+model CalendarSlot {
+ id String @id
+ tenantId String
+ startsAt DateTime
+ appointmentId String? @unique
+ @@unique([tenantId,startsAt])
+}
+model ToolEffect {
+ id String @id
+ tenantId String
+ runId String
+ toolId String
+ result Json
+ createdAt DateTime @default(now())
+ @@index([tenantId])
+}
+model Assessment {
+ id String @id @default(uuid())
+ business String
+ need String
+ consent Boolean
+ createdAt DateTime @default(now())
+}

@@ -1,0 +1,40 @@
+name: round-1-staging
+on:
+  push:
+    branches: [main, 'feat/**']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.20.0'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: scripts/staging.sh
+      - run: |
+          set -a
+          source .env.staging
+          set +a
+          npm run check
+          npm run api > /tmp/api.log 2>&1 &
+          npm run worker > /tmp/worker.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4000/ready; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4000/ready
+          npm run test:e2e
+          node --test tests/database-security.mjs
+          node scripts/readiness-recovery.mjs
+          scripts/backup-restore.sh
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: sanitized-startup-diagnostics
+          path: /tmp/*.log

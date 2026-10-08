@@ -45,3 +45,40 @@ Não alegar colaboradores ativos ou resultados garantidos antes de homologação
 
 ## A próxima tarefa
 Auditar CI, builds e infraestrutura; construir o primeiro workflow real do PACK-001; criar o control plane mínimo, e depois ativar piloto assistido. Ver [Roadmap](docs/ROADMAP-30-DAYS.md).
+
+## Round 1 — desenvolvimento local e staging sintético
+
+Implementação em branch, ainda **não homologada nem instalada na VPS**. Backend NestJS, Prisma/PostgreSQL, worker BullMQ/Redis, calendário sintético transacional e contratos OpenAPI. O frontend e os packs continuam nos seus próprios repositórios. Ver [relatório de entrega](docs/ROUND-1-DELIVERY-REPORT.md) para evidências e limitações; os requisitos originais acima continuam válidos.
+
+Requisitos: Node ≥22, npm e Docker Compose. O ambiente cloud já é isolado; utilizar os checkouts existentes, sem criar worktrees.
+
+```bash
+cd /workspace/AtlasHub-AI-WaaS
+npm ci
+scripts/staging.sh
+set -a
+source .env.staging
+set +a
+npm run api       # terminal 1
+npm run worker    # terminal 2, carregar o mesmo .env.staging
+```
+
+`init-staging.mjs` cria segredos aleatórios **apenas locais**, fora do Git, e preserva ficheiros existentes. `db:seed` só funciona na base dedicada `waas_staging`, usa dados fictícios e não apaga dados. Não usar estas credenciais ou o modo JWT partilhado fora de staging. Migrations: `npm run db:deploy`; SQL versionado e checksums; runner alternativo documentado em ADR-001.
+
+```bash
+npm run check
+npm run test:e2e                       # API e worker devem estar ativos
+node --test tests/database-security.mjs
+node scripts/readiness-recovery.mjs    # interrompe apenas o Postgres deste Compose
+scripts/backup-restore.sh              # restaura numa base separada waas_restore
+```
+
+Para repetir E2E, parar o worker antes de `ALLOW_STAGING_RESET=1 node scripts/reset-fixtures.mjs`, voltar a iniciá-lo e executar testes. Este comando limpa **somente os tenants sintéticos A/B** na base dedicada. Nunca apontá-lo ao Supabase nem a dados de cliente. `waas_restore` deve não existir antes do teste de restore; uma base existente não é substituída.
+
+Frontend: `cd /workspace/App.AtlasHub.Si && npm ci && npm run build && npm run start -- --hostname 127.0.0.1`. `WAAS_API_URL` é server-side; omissão usa API local. `node tests/browser.mjs` no backend verifica frontend e portal com uma sessão JWT sintética injetada pelo teste; não valida login Supabase.
+
+Modo container opcional: após bootstrap e construção da imagem, `docker compose --env-file .env.staging -f infra/compose.yml --profile application up -d --build`. Parar previamente os processos API/worker locais para evitar conflito. Todas as portas estão limitadas a loopback; uma implantação remota exige proxy TLS e revisão do inventário.
+
+Contratos: [OpenAPI](packages/contracts/openapi.json), [tipos gerados](packages/contracts/api-types.ts), [API](docs/API.md), [segurança](docs/THREAT-MODEL.md), [operações](docs/runbooks/OPERATIONS.md). A agenda é uma base sintética stateful. O adaptador n8n está testado contra um servidor HTTP sintético, mas **não está ativado no executor**; não há comunicação real de WhatsApp, CRM ou email.
+
+No cloud, o build Docker online falhou por DNS dentro do builder. Alternativa verificada, sem desativar integridade: `docker --config /workspace/.docker-build build --build-context npmcache=/workspace/.npm-cache -f infra/Dockerfile.offline -t atlashub-waas:round1 .`. Este modo reaproveita somente o cache npm com hashes do lockfile, não inclui env/credenciais, e executa a geração explícita Prisma após `npm ci --offline --ignore-scripts`. O Dockerfile normal destina-se a builders com acesso ao registry configurado.
