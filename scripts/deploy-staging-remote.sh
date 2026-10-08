@@ -27,12 +27,21 @@ EOF
   )
   echo "Gerado .env.staging (0600); valores não exibidos"
 fi
+# Round 2: credenciais da role de runtime (least privilege), acrescentadas se faltarem.
+if ! grep -q '^RUNTIME_DB_PASSWORD=' .env.staging; then
+  ( umask 077; python3 -c 'import secrets;print(f"RUNTIME_DB_PASSWORD={secrets.token_hex(32)}")' >> .env.staging )
+  echo "Acrescentada RUNTIME_DB_PASSWORD; valor não exibido"
+fi
+set -a; . ./.env.staging; set +a
+OWNER_URL="postgresql://waas:${DB_PASSWORD}@postgres:5432/waas_staging"
 
 $COMPOSE build api
 $COMPOSE up -d --wait postgres redis
-$COMPOSE run --rm --no-deps api node scripts/migrate.mjs
-$COMPOSE run --rm --no-deps api node scripts/seed.mjs
-$COMPOSE up -d --wait api worker
+# Migrations, role e seed com a role dona; API e worker com waas_runtime.
+$COMPOSE run --rm --no-deps -e DATABASE_URL="$OWNER_URL" api node scripts/migrate.mjs
+$COMPOSE run --rm --no-deps -e DATABASE_URL="$OWNER_URL" -e RUNTIME_DB_PASSWORD api node scripts/runtime-role.mjs
+$COMPOSE run --rm --no-deps -e DATABASE_URL="$OWNER_URL" api node scripts/seed.mjs
+$COMPOSE up -d --wait --force-recreate api worker
 $COMPOSE ps
 curl -fsS http://127.0.0.1:14000/health && echo && curl -fsS http://127.0.0.1:14000/ready && echo
 docker ps --format '{{.Names}} {{.Status}}' | grep -E 'levelab|atendimento-(api|chatwoot|evolution)|n8n'

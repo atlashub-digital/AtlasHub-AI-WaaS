@@ -1,6 +1,6 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { UnauthorizedException, ForbiddenException } from '@nestjs/common';
-import { db } from './context.js';
+import { withDb } from './context.js';
 const issuer=process.env.JWT_ISSUER;
 const audience=process.env.JWT_AUDIENCE;
 if(!issuer||!audience) throw new Error('JWT_ISSUER and JWT_AUDIENCE required');
@@ -21,7 +21,8 @@ export async function subject(req:any){
 }
 export async function identity(req:any,tenantId?:string,write=false){
  const sub=await subject(req);
- const memberships=await db.membership.findMany({where:{userId:sub,status:'active',...(tenantId?{tenantId}:{})}});
+ // Only the caller's own memberships are visible before a tenant is bound (RLS own_memberships).
+ const memberships=await withDb({userId:sub},tx=>tx.membership.findMany({where:{userId:sub,status:'active',...(tenantId?{tenantId}:{})}}));
  if(!memberships.length) throw new ForbiddenException();
  const membership=memberships[0];
  if(!tenantId&&memberships.length>1) throw new ForbiddenException('Select a tenant');

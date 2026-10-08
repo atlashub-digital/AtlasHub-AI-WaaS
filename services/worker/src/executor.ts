@@ -1,7 +1,10 @@
 import { PrismaPg } from '@prisma/adapter-pg';
 import { Prisma,PrismaClient } from '@prisma/client';
 import { classify,toolInputs } from '../../../packages/contracts/policy.js';
-const db=new PrismaClient({adapter:new PrismaPg({connectionString:process.env.DATABASE_URL})});
+import { scoped,setContext } from '../../../packages/db/context.js';
+export const db=new PrismaClient({adapter:new PrismaPg({connectionString:process.env.DATABASE_URL})});
+// Worker resolves the run's tenant under the narrow 'worker' scope, then binds the transaction to that tenant.
+export async function runTenant(runId:string){return (await scoped(db,{scope:'worker'},tx=>tx.taskRun.findUnique({where:{id:runId},select:{tenantId:true}})))?.tenantId;}
 class PolicyError extends Error{}
 async function event(tx:Prisma.TransactionClient,run:any,type:string,safePayload:Prisma.InputJsonValue={}){await tx.taskEvent.create({data:{tenantId:run.tenantId,runId:run.id,type,safePayload}});}
 async function grant(tx:Prisma.TransactionClient,run:any,toolId:string,input:unknown){const schema=toolInputs[toolId];if(!schema||!schema.safeParse(input).success)throw new PolicyError('invalid_tool_input');const allowed=await tx.toolGrant.findFirst({where:{tenantId:run.tenantId,deploymentId:run.deploymentId,toolId,enabled:true}});if(!allowed)throw new PolicyError('tool_denied');await event(tx,run,'tool.authorized',{toolId});}
@@ -9,7 +12,9 @@ async function handoff(tx:Prisma.TransactionClient,run:any,reason:string){await 
 if(!existing)await tx.approval.create({data:{tenantId:run.tenantId,runId:run.id,requestedAction:reason,safeContext:{reason},assigneeId,expiresAt:new Date(Date.now()+3600000)}});else if(existing.state!=='pending')await tx.approval.update({where:{id:existing.id},data:{state:'pending',requestedAction:reason,safeContext:{reason},assigneeId,resolvedAt:null,expiresAt:new Date(Date.now()+3600000)}});await tx.taskRun.update({where:{id:run.id},data:{state:'awaiting_approval',result:{reason}}});await event(tx,run,'human.requested',{reason});}
 export async function execute(runId:string){
  try{return await db.$transaction(async tx=>{
+ await setContext(tx,{scope:'worker'});
  const existing=await tx.taskRun.findUnique({where:{id:runId}});if(!existing)return;
+ await setContext(tx,{tenantId:existing.tenantId});
  // Deployment lock serializes pause, quota checks and every calendar mutation.
  await tx.$queryRaw`SELECT id FROM "Deployment" WHERE id=${existing.deploymentId} FOR UPDATE`;
  const run=await tx.taskRun.findUniqueOrThrow({where:{id:runId}});if(['completed','blocked','cancelled','suspended','dead_letter'].includes(run.state))return;
@@ -50,7 +55,7 @@ export async function execute(runId:string){
  await event(tx,run,'calendar.updated',result);
  if(used+1>=limits.alertAt)await tx.incident.create({data:{tenantId:run.tenantId,deploymentId:run.deploymentId,runId:run.id,severity:'info',reason:'quota_threshold'}});
  },{timeout:10000});}catch(error){
- if(error instanceof PolicyError){const run=await db.taskRun.findUniqueOrThrow({where:{id:runId}});await db.$transaction(async tx=>{await tx.taskRun.update({where:{id:runId},data:{state:'blocked',result:{reason:error.message}}});await event(tx,run,'policy.denied',{reason:error.message});});return;}
+ if(error instanceof PolicyError){const tenantId=await runTenant(runId);if(!tenantId)throw error;await scoped(db,{tenantId},async tx=>{const run=await tx.taskRun.findUniqueOrThrow({where:{id:runId}});await tx.taskRun.update({where:{id:runId},data:{state:'blocked',result:{reason:error.message}}});await event(tx,run,'policy.denied',{reason:error.message});});return;}
  throw error;
  }
 }

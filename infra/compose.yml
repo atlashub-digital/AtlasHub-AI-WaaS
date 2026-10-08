@@ -33,7 +33,7 @@ services:
     image: atlashub-waas:round1
     env_file: ../.env.staging
     environment:
-      DATABASE_URL: postgresql://waas:${DB_PASSWORD}@postgres:5432/waas_staging
+      DATABASE_URL: ${APP_DATABASE_URL_OVERRIDE:-postgresql://waas_runtime:${RUNTIME_DB_PASSWORD:?required}@postgres:5432/waas_staging}
       REDIS_HOST: redis
       BIND_HOST: 0.0.0.0
     ports: ["127.0.0.1:4000:4000"]
@@ -56,7 +56,7 @@ services:
     command: ["node", "dist/services/worker/src/main.js"]
     env_file: ../.env.staging
     environment:
-      DATABASE_URL: postgresql://waas:${DB_PASSWORD}@postgres:5432/waas_staging
+      DATABASE_URL: ${APP_DATABASE_URL_OVERRIDE:-postgresql://waas_runtime:${RUNTIME_DB_PASSWORD:?required}@postgres:5432/waas_staging}
       REDIS_HOST: redis
     depends_on:
       postgres: {condition: service_healthy}

@@ -22,8 +22,9 @@ jobs:
           source .env.staging
           set +a
           npm run check
-          npm run api > /tmp/api.log 2>&1 &
-          npm run worker > /tmp/worker.log 2>&1 &
+          # API and worker run as the least-privilege role; tests keep the owner connection for fixtures.
+          DATABASE_URL="$APP_DATABASE_URL" npm run api > /tmp/api.log 2>&1 &
+          DATABASE_URL="$APP_DATABASE_URL" npm run worker > /tmp/worker.log 2>&1 &
           for attempt in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:4000/ready; then break; fi
             sleep 1
@@ -31,6 +32,7 @@ jobs:
           curl -fsS http://127.0.0.1:4000/ready
           npm run test:e2e
           node --test tests/database-security.mjs
+          node --test tests/runtime-rls.mjs
           node scripts/readiness-recovery.mjs
           scripts/backup-restore.sh
       - uses: actions/upload-artifact@v4
