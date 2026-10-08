@@ -4,7 +4,17 @@
 
 > A AtlasHub disponibiliza **colaboradores digitais geridos** para executar funções empresariais delimitadas. O cliente contrata um serviço continuado; a AtlasHub implementa, opera, supervisiona, suporta e melhora. **Não se trata de instalar software no cliente nem de uma agência legal de trabalho temporário.**
 
-## Começar aqui
+## Começar aqui — edição para Codex (2026-10-07)
+
+**Ordem obrigatória de leitura para Round 1:**
+1. [Executive Brief](docs/00-EXECUTIVE-BRIEF.md)
+2. [PRD — Requisitos de produto](docs/01-PRODUCT-PRD.md)
+3. [Blueprint técnico](docs/02-TECHNICAL-BLUEPRINT.md)
+4. [Critérios de aceitação e testes](docs/03-ACCEPTANCE-AND-TESTS.md)
+5. [Contrato de execução para Codex](docs/04-CODEX-EXECUTION-BRIEF.md)
+6. [Riscos e decisões](docs/05-RISKS-AND-DECISIONS.md)
+
+## Documentos de apoio e histórico
 1. [Project Charter — visão, modelo de negócio e MVP](docs/PROJECT-CHARTER.md)
 2. [Auditoria dos repositórios existentes](docs/REPOSITORY-AUDIT.md)
 3. [Arquitetura AI-WaaS](docs/ARCHITECTURE.md)
