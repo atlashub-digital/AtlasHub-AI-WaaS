@@ -16,7 +16,7 @@
 | [atlas-agent-packs](https://github.com/atlashub-digital/atlas-agent-packs) | Packs reutilizáveis versionados; definição técnica de competências |
 | [App.AtlasHub.Si](https://github.com/atlashub-digital/App.AtlasHub.Si) | Clara, catálogo, simulador e futuro portal do cliente |
 | **AtlasHub-AI-WaaS** | Fonte principal de verdade comercial e operacional, subscrições e deployments |
-| [atlas-si-os](https://github.com/atlashub-digital/atlas-si-os) | Coordenação de equipas e operações internas |
+| **AI-WaaS Operations** | Coordenação e supervisão operacional no próprio projeto; sem dependência de PaperClip |
 
 ## Conceitos fundamentais
 **Pack** = capacidade técnica reutilizável. **Role** = colaborador digital como oferta comercial. **Deployment** = instância contratada e isolada para um cliente. **Managed Service** = execução com SLA, monitorização, revisão humana e suporte.
