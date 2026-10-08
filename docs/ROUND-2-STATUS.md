@@ -87,3 +87,20 @@ A auditoria detalhada das VPS fica no repositório privado `atlas-ops`, porque e
    - Modelos gratuitos do OpenRouter podem registar pedidos: só dados sintéticos.
 5. **Bloqueios:** a importação e ativação do workflow n8n foram recusadas pela política de permissões da sessão (serviço partilhado); o script fica pronto para execução manual.
 6. **Próxima ação:** correr `scripts/n8n-staging-setup.sh`; provisionar a ROLE-006 no Supabase com `n8n_tools: ["research.collect"]` e testar o caminho worker → n8n → feeds; Fase B (CRM/catálogo comercial).
+
+## Checkpoint 7 — 2026-10-08
+
+1. **Verificado:** primeira integração real de ponta a ponta. Inbound assinado → API/worker no Supabase (RLS, `waas_runtime`) → n8n por HTTPS (Header Auth + HMAC) → feeds RSS públicos reais → resultado auditado. Rascunho de post escrito pela IA (OpenRouter, modelo gratuito) e guardado como `draft`.
+2. **Alterado:**
+   - Workflow `waas-staging · marketing-assistant · research.collect` importado e ativo (pelo Founder com `scripts/n8n-staging-setup.sh`).
+   - Catálogo dos 8 roles e pack releases no Supabase.
+   - ROLE-006 provisionada no tenant A **pela API** com sessão real do owner (`n8n_tools: ["research.collect"]`).
+   - Canal de teste `channel-A-006`.
+3. **Testes:**
+   - Webhook n8n: sem token 403; com token 200 em 0,6 s.
+   - Pesquisa: concluída em 5,9 s com 5 artigos reais.
+   - Post: concluído em 12 s; rascunho da IA; 0 fontes licenciadas (feeds sem licença, corretamente excluídos).
+   - Tools concedidas: `post.publish` nunca concedida; `post.schedule` com aprovação.
+4. **Riscos:** os conteúdos dos feeds não são licenciados para republicação; a IA gratuita só com dados sintéticos.
+5. **Bloqueios:** nenhum para continuar.
+6. **Próxima ação:** workflows n8n das restantes tools com sistemas de teste; endpoint de API para ligar canais (hoje feito em SQL); inbox de teste no Chatwoot; Fase B (CRM/catálogo comercial); OpenAPI dos 8 roles.
