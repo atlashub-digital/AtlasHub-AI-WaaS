@@ -194,3 +194,381 @@ model SandboxRecord {
  @@unique([tenantId,kind,key])
  @@index([tenantId,kind])
 }
+
+// ===== Phase B: commercial platform (migration 202610090006_commercial) =====
+model CatalogMissionTemplate {
+ id String @id
+ roleId String
+ kind String
+ durationDays Int?
+ capacity Json
+ includedAddons String[]
+ optionalAddons String[]
+ status String @default("draft")
+ @@map("catalog_mission_template")
+}
+model CatalogMissionTemplateI18n {
+ templateId String
+ locale String
+ name String
+ objective String
+ scopeIn String
+ scopeOut String
+ @@id([templateId,locale])
+ @@map("catalog_mission_template_i18n")
+}
+model CatalogProduct {
+ id String @id
+ kind String
+ roleId String?
+ templateId String?
+ status String @default("draft")
+ createdAt DateTime @default(now())
+ @@map("catalog_product")
+}
+model CatalogProductI18n {
+ productId String
+ locale String
+ name String
+ description String
+ @@id([productId,locale])
+ @@map("catalog_product_i18n")
+}
+model CatalogPrice {
+ id String @id
+ productId String
+ currency String
+ pricingModel String
+ interval String
+ amountMinor BigInt?
+ includedQuantity Int?
+ overageMinor BigInt?
+ usageMetric String?
+ trialDays Int?
+ market String @default("*")
+ taxBehavior String @default("exclusive")
+ status String @default("draft")
+ createdAt DateTime @default(now())
+ @@map("catalog_price")
+}
+model BillingIssuer {
+ id String @id
+ legalName String
+ country String
+ taxId String
+ address Json
+ currencies String[]
+ series String @unique
+ email String
+ status String @default("active")
+ @@map("billing_issuer")
+}
+model BillingInvoiceSequence {
+ issuerId String
+ year Int
+ last Int @default(0)
+ @@id([issuerId,year])
+ @@map("billing_invoice_sequence")
+}
+model CrmCompany {
+ id String @id
+ tenantId String
+ name String
+ domain String?
+ country String?
+ taxId String?
+ sizeBand String?
+ industry String?
+ createdAt DateTime @default(now())
+ @@map("crm_company")
+}
+model CrmContact {
+ id String @id
+ tenantId String
+ companyId String?
+ fullName String
+ emailNorm String?
+ phoneE164 String?
+ preferredLocale String @default("pt-BR")
+ timezone String?
+ createdAt DateTime @default(now())
+ @@map("crm_contact")
+}
+model CrmConsent {
+ id String @id
+ tenantId String
+ contactId String
+ purpose String
+ lawfulBasis String
+ source String
+ textVersion String
+ locale String
+ grantedAt DateTime @default(now())
+ withdrawnAt DateTime?
+ evidence Json
+ @@map("crm_consent")
+}
+model CrmSuppression {
+ id String @id
+ tenantId String
+ kind String
+ valueHash String
+ reason String
+ createdAt DateTime @default(now())
+ @@unique([tenantId,kind,valueHash])
+ @@map("crm_suppression")
+}
+model ConciergeSession {
+ id String @id
+ tenantId String
+ channel String
+ agent String
+ locale String
+ aiDisclosed Boolean
+ qualification Json @default("{}")
+ leadId String?
+ startedAt DateTime @default(now())
+ @@map("concierge_session")
+}
+model CrmLead {
+ id String @id
+ tenantId String
+ contactId String
+ companyId String?
+ source String
+ stage String @default("new")
+ score Int @default(0)
+ fit Json @default("{}")
+ interestRoles String[]
+ locale String
+ utm Json @default("{}")
+ conciergeSessionId String?
+ lostReason String?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @default(now()) @updatedAt
+ @@map("crm_lead")
+}
+model CrmActivity {
+ id String @id
+ tenantId String
+ leadId String?
+ kind String
+ note String
+ actor String
+ at DateTime @default(now())
+ @@map("crm_activity")
+}
+model CrmImportBatch {
+ id String @id
+ tenantId String
+ source String
+ lawfulBasis String
+ basisNote String
+ status String @default("validated")
+ rowsTotal Int
+ rowsValid Int
+ rowsDuplicate Int
+ rowsRejected Int
+ rowsSuppressed Int
+ createdBy String
+ createdAt DateTime @default(now())
+ @@map("crm_import_batch")
+}
+model CrmImportRow {
+ id String @id
+ tenantId String
+ batchId String
+ rowNo Int
+ normalized Json
+ errors String[]
+ outcome String
+ leadId String?
+ @@map("crm_import_row")
+}
+model CommerceTrial {
+ id String @id
+ tenantId String
+ leadId String
+ templateId String
+ days Int
+ status String @default("requested")
+ customerTenantId String?
+ requestedAt DateTime @default(now())
+ approvedAt DateTime?
+ endsAt DateTime?
+ @@map("commerce_trial")
+}
+model CommerceQuote {
+ id String @id
+ tenantId String
+ leadId String
+ issuerId String
+ status String @default("draft")
+ currency String
+ locale String
+ totalMinor BigInt @default(0)
+ validUntil DateTime
+ termsVersion String
+ acceptTokenHash String? @unique
+ acceptedAt DateTime?
+ acceptedBy String?
+ customerTenantId String?
+ createdAt DateTime @default(now())
+ @@map("commerce_quote")
+}
+model CommerceQuoteLine {
+ id String @id
+ tenantId String
+ quoteId String
+ priceId String
+ quantity Int
+ unitMinor BigInt
+ amountMinor BigInt
+ description String
+ @@map("commerce_quote_line")
+}
+model CommerceOrder {
+ id String @id
+ tenantId String
+ quoteId String?
+ status String @default("pending_payment")
+ currency String
+ totalMinor BigInt
+ createdAt DateTime @default(now())
+ @@map("commerce_order")
+}
+model CommerceSubscription {
+ id String @id
+ tenantId String
+ orderId String?
+ priceId String
+ quantity Int @default(1)
+ status String @default("incomplete")
+ currentPeriodStart DateTime?
+ currentPeriodEnd DateTime?
+ cancelAt DateTime?
+ createdAt DateTime @default(now())
+ @@map("commerce_subscription")
+}
+model CommerceEntitlement {
+ id String @id
+ tenantId String
+ key String
+ source String
+ sourceId String
+ quantity Int?
+ validFrom DateTime @default(now())
+ validUntil DateTime?
+ status String @default("active")
+ @@unique([tenantId,key,source,sourceId])
+ @@map("commerce_entitlement")
+}
+model CommerceMission {
+ id String @id
+ tenantId String
+ templateId String
+ kind String
+ addons String[]
+ capacity Json
+ source String
+ sourceId String
+ status String @default("provisioning")
+ startsAt DateTime?
+ endsAt DateTime?
+ deploymentId String?
+ createdAt DateTime @default(now())
+ @@unique([tenantId,source,sourceId,templateId])
+ @@map("commerce_mission")
+}
+model BillingAccount {
+ id String @id
+ tenantId String @unique
+ issuerId String
+ legalName String
+ taxId String?
+ country String
+ email String
+ address Json @default("{}")
+ currency String
+ locale String
+ createdAt DateTime @default(now())
+ @@map("billing_account")
+}
+model BillingInvoice {
+ id String @id
+ tenantId String
+ accountId String
+ issuerId String
+ orderId String?
+ number String? @unique
+ status String @default("draft")
+ currency String
+ subtotalMinor BigInt
+ taxMinor BigInt
+ totalMinor BigInt
+ locale String
+ issuedAt DateTime?
+ dueAt DateTime?
+ paidAt DateTime?
+ legalDocumentRef Json?
+ createdAt DateTime @default(now())
+ @@map("billing_invoice")
+}
+model BillingInvoiceLine {
+ id String @id
+ tenantId String
+ invoiceId String
+ priceId String?
+ description String
+ quantity Int
+ unitMinor BigInt
+ taxRateBp Int @default(0)
+ amountMinor BigInt
+ @@map("billing_invoice_line")
+}
+model BillingPayment {
+ id String @id
+ tenantId String
+ invoiceId String
+ provider String
+ providerRef String?
+ method String
+ status String @default("pending")
+ amountMinor BigInt
+ currency String
+ checkout Json @default("{}")
+ paidAt DateTime?
+ createdAt DateTime @default(now())
+ @@unique([provider,providerRef])
+ @@map("billing_payment")
+}
+model BillingDelivery {
+ id String @id
+ tenantId String
+ invoiceId String
+ channel String
+ recipient String
+ status String @default("queued")
+ attempts Int @default(0)
+ lastError String?
+ createdAt DateTime @default(now())
+ sentAt DateTime?
+ @@map("billing_delivery")
+}
+model BillingWebhookEvent {
+ id String @id
+ provider String
+ eventId String
+ eventType String
+ providerRef String?
+ payloadSha256 String
+ facts Json @default("{}")
+ status String @default("received")
+ attempts Int @default(0)
+ error String?
+ tenantId String?
+ receivedAt DateTime @default(now())
+ processedAt DateTime?
+ @@unique([provider,eventId])
+ @@map("billing_webhook_event")
+}

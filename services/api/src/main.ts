@@ -9,6 +9,9 @@ import { identity,subject } from './auth.js';
 import { inbound,deploymentInput,transitions } from '../../../packages/contracts/policy.js';
 import { assertRuntimeRole } from '../../../packages/db/context.js';
 import { ROLES,ROLE_BINDINGS } from '../../../packages/roles/index.js';
+import { Commerce } from './commerce.js';
+// Money is BIGINT minor units (always < 2^53): serialise as numbers if any slips into a response.
+(BigInt.prototype as any).toJSON=function(){return Number(this);};
 function parse<T>(schema:z.ZodType<T>,data:unknown):T{const result=schema.safeParse(data);if(!result.success)throw new BadRequestException('Invalid request');return result.data;}
 // Every tenant query runs in a transaction bound to the caller's tenant (RLS tenant_isolation).
 const as=(who:{tenantId:string;sub:string})=>({tenantId:who.tenantId,userId:who.sub});
@@ -50,7 +53,7 @@ class Api {
  @Get('v1/ops/incidents') async incidents(@Req() req:any,@Query('tenant') tenant?:string){const who=await identity(req,tenant);if(!who.role.startsWith('atlas_'))throw new ForbiddenException();return withDb(as(who),tx=>tx.incident.findMany({where:{tenantId:who.tenantId},take:100}));}
  @Get('v1/ops/metrics') async metrics(@Req() req:any,@Query('tenant') tenant?:string){const who=await identity(req,tenant);if(!who.role.startsWith('atlas_'))throw new ForbiddenException();return {runs:await withDb(as(who),tx=>tx.taskRun.groupBy({by:['state'],where:{tenantId:who.tenantId},_count:true}))};}
 }
-@Module({controllers:[Api]})class AppModule{}
+@Module({controllers:[Api,Commerce]})class AppModule{}
 await assertRuntimeRole(db);
 const app=await NestFactory.create(AppModule,{rawBody:true,logger:false});
 app.useGlobalFilters({catch(exception:unknown,host:any){const status=exception instanceof HttpException?exception.getStatus():500;host.switchToHttp().getResponse().status(status).json({statusCode:status,error:status>=500?'dependency_or_server_error':exception instanceof HttpException?exception.message:'request_rejected'});}});

@@ -32,6 +32,10 @@ if ! grep -q '^RUNTIME_DB_PASSWORD=' .env.staging; then
   ( umask 077; python3 -c 'import secrets;print(f"RUNTIME_DB_PASSWORD={secrets.token_hex(32)}")' >> .env.staging )
   echo "Acrescentada RUNTIME_DB_PASSWORD; valor não exibido"
 fi
+if ! grep -q '^SANDBOX_PAYMENTS_SECRET=' .env.staging; then
+  ( umask 077; python3 -c 'import secrets;print(f"PAYMENTS_MODE=sandbox\nSANDBOX_PAYMENTS_SECRET={secrets.token_hex(32)}\nCONCIERGE_SERVICE_KEY={secrets.token_hex(32)}\nTRIAL_EXPIRY_INTERVAL_MS=5000")' >> .env.staging )
+  echo "Acrescentadas definições de pagamentos sandbox; valores não exibidos"
+fi
 set -a; . ./.env.staging; set +a
 OWNER_URL="postgresql://waas:${DB_PASSWORD}@postgres:5432/waas_staging"
 
@@ -42,6 +46,7 @@ $COMPOSE run --rm --no-deps -e DATABASE_URL="$OWNER_URL" api node scripts/migrat
 $COMPOSE run --rm --no-deps -e DATABASE_URL="$OWNER_URL" -e RUNTIME_DB_PASSWORD api node scripts/runtime-role.mjs
 $COMPOSE run --rm --no-deps -e DATABASE_URL="$OWNER_URL" api node scripts/seed.mjs
 $COMPOSE run --rm --no-deps -e DATABASE_URL="$OWNER_URL" api node scripts/seed-roles.mjs
+$COMPOSE run --rm --no-deps -e DATABASE_URL="$OWNER_URL" api node scripts/seed-commerce.mjs
 $COMPOSE up -d --wait --force-recreate api worker
 $COMPOSE ps
 curl -fsS http://127.0.0.1:14000/health && echo && curl -fsS http://127.0.0.1:14000/ready && echo

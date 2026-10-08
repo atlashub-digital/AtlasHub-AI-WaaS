@@ -1,6 +1,6 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 
-export type Scope = 'platform' | 'inbound' | 'resolve' | 'worker' | 'public_intake';
+export type Scope = 'platform' | 'inbound' | 'resolve' | 'worker' | 'public_intake' | 'billing_webhook' | 'quote_accept' | 'billing';
 export type DbContext = { tenantId?: string; userId?: string; scope?: Scope };
 
 // Declares the RLS context for the current transaction only (set_config is_local=true).
