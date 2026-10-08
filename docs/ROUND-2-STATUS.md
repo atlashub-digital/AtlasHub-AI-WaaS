@@ -33,3 +33,20 @@ A auditoria detalhada das VPS fica no repositório privado `atlas-ops`, porque e
 4. **Riscos:** nenhum serviço dependia do projeto (verificado nos containers em execução).
 5. **Bloqueios:** nenhum para o G1.
 6. **Próxima ação:** G1 — `AUTH_MODE=supabase` (JWKS ES256) com utilizadores e memberships de teste; role de runtime mínima e RLS por tenant no caminho real do backend; repetir A/B.
+
+## Checkpoint 4 — 2026-10-08
+
+1. **Verificado:** alinhamento com o pedido e modelo de dados v2 publicados ([ROUND-2-ALIGNMENT](ROUND-2-ALIGNMENT.md), [DATA-MODEL-v2](DATA-MODEL-v2.md)).
+2. **Alterado:**
+   - Migration `202610080003_runtime_rls`: role `waas_runtime` sem `BYPASSRLS` nem DDL; políticas `tenant_isolation` e `platform_operator` em todas as tabelas de tenant; scopes estreitos só de leitura para pesquisas antes do tenant (memberships próprias, inbound, resolve, worker); catálogo só leitura; histórico de migrations privado.
+   - API e worker executam cada query numa transação ligada ao tenant (`set_config`), e recusam arrancar com uma role privilegiada.
+   - `scripts/runtime-role.mjs`, Compose e CI passam a correr a app como `waas_runtime`.
+   - Staging VPS atualizado; merge em main após CI verde.
+   - Supabase: só a migration 001 (tabelas) aplicada.
+3. **Testes:**
+   - Staging remoto com a app em `waas_runtime`: E2E **14/14**, segurança DB **2/2**, novo `tests/runtime-rls.mjs` **6/6**.
+   - GitHub Actions: **PASS** ([run 37744163510](https://github.com/atlashub-digital/AtlasHub-AI-WaaS/actions/runs/37744163510)).
+   - Nota: entre corridas de E2E é preciso o reset dos fixtures (o E10 deixa o deployment A em pausa).
+4. **Riscos:** o Supabase tem a 001 sem a 002/003; verificado que `anon`, `authenticated` e `service_role` não têm nenhum grant nas tabelas, e as tabelas estão vazias.
+5. **Bloqueios:** a aplicação das migrations 002/003 no Supabase foi recusada pela política de permissões da sessão.
+6. **Próxima ação:** aplicar 002/003 no Supabase; criar o login de `waas_runtime` por verificador SCRAM (a password fica só na VPS); ligar o staging ao Supabase pelo pooler; Auth Supabase real com utilizadores de teste; repetir A/B.
