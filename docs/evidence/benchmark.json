@@ -1,0 +1,11 @@
+{
+  "at": "2026-10-08T02:27:36.725Z",
+  "target": "signed sandbox inbound admission; consent-blocked synthetic B",
+  "requests": 20,
+  "concurrency": 1,
+  "p50Ms": 17.673337000000004,
+  "p95Ms": 28.58802700000001,
+  "maxMs": 67.97207399999999,
+  "externalCost": 0,
+  "includesWorkerCompletion": false
+}

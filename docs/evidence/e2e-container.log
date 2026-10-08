@@ -1,0 +1,31 @@
+
+> @atlashub/ai-waas@0.1.0 test:e2e
+> node --test tests/e2e.mjs
+
+✔ T04 authentication, role and cross-tenant access (110.30165ms)
+✔ T05 invalid and stale signatures rejected (12.958262ms)
+✔ E01/E07 exactly-once confirmation despite concurrent delivery (226.168589ms)
+✔ E02 slots originate in calendar and approved reschedule persists (378.306948ms)
+✔ E04/E05 clinical handoff and absence of consent (241.490275ms)
+✔ T09/T10/E08 untrusted identifiers, prompt injection and unknown intent fail safely (363.782516ms)
+✔ E09 tenant A cannot read B or use B appointment through channel A (249.072991ms)
+✔ E06 two reschedules cannot reserve the same slot (378.675522ms)
+✔ E03 no slots yields handoff (125.861496ms)
+✔ T07 disabled tool denied and logs contain no raw text (147.192198ms)
+✔ T06 calendar failure retries, dead letter incident and operator recovery (1064.207211ms)
+✔ T14 quota threshold creates visible incident and limit blocks mutation (258.288279ms)
+✔ E10/T08 pause rejects subsequent executions while history remains readable (49.08075ms)
+✔ T04 wrong issuer, expired JWT and anonymous resource enumeration denied (13.973702ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3797.489505
+npm notice
+npm notice New major version of npm available! 11.9.0 -> 12.2.0
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+npm notice To update run: npm install -g npm@12.2.0
+npm notice
