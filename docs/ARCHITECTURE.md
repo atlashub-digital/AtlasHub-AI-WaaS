@@ -9,7 +9,7 @@
 | Hermes Agent | Interpretação e execução confinada por ferramentas | Acesso direto irrestrito a sistemas ou chaves |
 | n8n | Orquestração determinística e adaptadores de integração | Misturar credenciais entre clientes |
 | Atendimento.Center | WhatsApp, webchat, filas e handoff | Decidir autonomamente processos regulados |
-| Atlas.SI OS / PaperClip | Coordenação interna, tarefas, supervisão e runbooks | Ser o único mecanismo de controlo de produção |
+| AI-WaaS Operations | Supervisão, filas, aprovações, incidentes e runbooks no próprio serviço | Depender de PaperClip para operar |
 
 ## Fluxo de produção
 Canal → entrada autenticada e roteamento de tenant → política/limites → sessão de agente → tool gateway com autorização por tenant → workflow n8n específico → sistema autorizado → evento de execução → auditoria, métricas e eventual handoff.
@@ -42,7 +42,7 @@ Todas as rotas privadas exigem autenticação, autorização, tenancy e trilha d
 2. Serviço = combinação de pack + perfil comercial + configurações + tool grants + SLA.
 3. Execuções não podem atravessar tenants, mesmo com instâncias compartilhadas de runtime.
 4. Medidas de custo e qualidade são coletadas por tarefa e cliente.
-5. Runbooks de falha devem operar sem depender de uma única instância Hermes/PaperClip.
+5. Runbooks de falha devem operar sem depender de uma única instância Hermes ou de qualquer orquestrador opcional.
 6. Plano de disaster recovery: backup, restauração testada, rotação de credenciais e exportação de dados na rescisão.
 
 ## Estratégia de infraestrutura
