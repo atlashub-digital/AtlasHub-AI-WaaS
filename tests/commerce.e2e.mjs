@@ -56,7 +56,7 @@ test('quote → acceptance → invoice → verified payment unlocks entitlement 
  const sent=await call(`/v1/ops/quotes/${q.body.id}/send`,{sub:'house-operator',method:'POST'});assert.equal(sent.status,200);
  const acc=await call('/v1/public/quotes/accept',{method:'POST',body:{token:sent.body.acceptToken,acceptedBy:'Pessoa de Teste',billing:{legalName:'Clínica Teste Ltda',country:'BR',email:'financeiro@example.test',address:{city:'Goiânia'}}}});
  assert.equal(acc.status,201);assert.match(acc.body.invoice.number,/^AH-BR-\d{4}-\d{6}$/);assert.equal(acc.body.payment.provider,'sandbox');assert.equal(acc.body.payment.method,'pix');assert.match(acc.body.payment.checkout.qr_code,/^SANDBOX-PIX-/);
- assert.equal((await call('/v1/public/quotes/accept',{method:'POST',body:{token:sent.body.acceptToken,acceptedBy:'X',billing:{legalName:'X',country:'BR',email:'x@example.test'}}})).status,404);
+ assert.equal((await call('/v1/public/quotes/accept',{method:'POST',body:{token:sent.body.acceptToken,acceptedBy:'Outra Pessoa',billing:{legalName:'Outra Empresa',country:'BR',email:'x@example.test'}}})).status,404);
  const tenant=acc.body.tenant;const ref=`sbx_${acc.body.payment.id}`;
  const bad=sandboxWebhook({id:`evt_${id()}`,type:'payment.updated',payment_ref:ref,status:'succeeded',amount_minor:150000,currency:'BRL'});
  assert.equal((await call('/v1/webhooks/payments/sandbox',{method:'POST',body:bad.raw,headers:{'x-sandbox-signature':'t=1,v1=00'}})).status,401);

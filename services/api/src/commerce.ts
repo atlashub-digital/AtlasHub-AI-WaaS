@@ -167,8 +167,9 @@ export class Commerce {
     let outcome = errors.length ? 'rejected' : 'valid';
     if (outcome === 'valid') {
      const key = email ?? phone!;
-     if (seen.has(key) || await tx.crmContact.findFirst({ where: { tenantId: HOUSE, OR: [...(email ? [{ emailNorm: email }] : []), ...(phone ? [{ phoneE164: phone }] : [])] } })) outcome = 'duplicate';
-     else if (await tx.crmSuppression.findFirst({ where: { tenantId: HOUSE, OR: [...(email ? [{ kind: 'email', valueHash: suppressionHash('email', email) }] : []), ...(phone ? [{ kind: 'phone', valueHash: suppressionHash('phone', phone) }] : [])] } })) outcome = 'suppressed';
+     // A do-not-contact request outranks everything else, including an existing contact.
+     if (await tx.crmSuppression.findFirst({ where: { tenantId: HOUSE, OR: [...(email ? [{ kind: 'email', valueHash: suppressionHash('email', email) }] : []), ...(phone ? [{ kind: 'phone', valueHash: suppressionHash('phone', phone) }] : [])] } })) outcome = 'suppressed';
+     else if (seen.has(key) || await tx.crmContact.findFirst({ where: { tenantId: HOUSE, OR: [...(email ? [{ emailNorm: email }] : []), ...(phone ? [{ phoneE164: phone }] : [])] } })) outcome = 'duplicate';
      seen.add(key);
     }
     out.push({ rowNo: n + 1, normalized, errors, outcome });
