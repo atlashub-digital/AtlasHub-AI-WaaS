@@ -1,0 +1,23 @@
+{
+  "updated": "2026-10-08",
+  "backend": {
+    "pr": "https://github.com/atlashub-digital/AtlasHub-AI-WaaS/pull/6",
+    "ci": "https://github.com/nexflowx-hub/AtlasHub-AI-WaaS/actions/runs/37722197822",
+    "ciCommit": "aaa3af0c6be3a4800477671e1f03c48c19c94bfe",
+    "conclusion": "success"
+  },
+  "frontend": {
+    "pr": "https://github.com/atlashub-digital/App.AtlasHub.Si/pull/1",
+    "ci": "https://github.com/nexflowx-hub/App.AtlasHub.Si/actions/runs/37722563217",
+    "ciCommit": "b2ea04b",
+    "conclusion": "success"
+  },
+  "packs": {
+    "pr": "https://github.com/atlashub-digital/atlas-agent-packs/pull/1",
+    "ci": "https://github.com/atlashub-digital/atlas-agent-packs/actions/runs/37722156333",
+    "conclusion": "action_required",
+    "jobsExecuted": 0
+  },
+  "merged": false,
+  "productionChanged": false
+}
