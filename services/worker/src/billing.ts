@@ -2,11 +2,13 @@ import { randomUUID } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import { scoped } from '../../../packages/db/context.js';
 import { ADAPTERS } from '../../../packages/commerce/payments.js';
+import { settleInvoice } from '../../../packages/commerce/settle.js';
+import { renderInvoiceHtml } from '../../../packages/commerce/invoice.js';
+import { asLocale } from '../../../packages/commerce/i18n.js';
 import { db } from './executor.js';
 
 type Tx = Prisma.TransactionClient;
 const HOUSE = process.env.HOUSE_TENANT_ID ?? 'atlashub';
-const addInterval = (d: Date, interval: string) => { const x = new Date(d); if (interval === 'month') x.setUTCMonth(x.getUTCMonth() + 1); else if (interval === 'quarter') x.setUTCMonth(x.getUTCMonth() + 3); else if (interval === 'year') x.setUTCFullYear(x.getUTCFullYear() + 1); return x; };
 const finish = (id: string, status: string, error: string | null, tenantId: string | null = null) => scoped(db, { scope: 'worker' }, tx => tx.billingWebhookEvent.update({ where: { id }, data: { status, error, tenantId, processedAt: new Date(), attempts: { increment: 1 } } }));
 
 // Payment webhook → re-read the payment from the provider → verify amount, currency and reference →
@@ -21,38 +23,10 @@ export async function processWebhook(eventId: string) {
  if (remote.amountMinor !== Number(payment.amountMinor) || remote.currency !== payment.currency || (remote.reference && remote.reference !== payment.id)) { await finish(ev.id, 'failed', 'payment_mismatch', payment.tenantId); return; }
  await scoped(db, { tenantId: payment.tenantId }, async tx => {
   const current = await tx.billingPayment.findUniqueOrThrow({ where: { id: payment.id } });
-  if (remote.status === 'succeeded' && current.status === 'pending') await settle(tx, current.tenantId, current.id, current.invoiceId);
+  if (remote.status === 'succeeded' && current.status === 'pending') await settleInvoice(tx, current.tenantId, current.invoiceId, current.id, 'billing');
   else if (['failed', 'expired', 'refunded'].includes(remote.status) && current.status !== remote.status) await tx.billingPayment.update({ where: { id: current.id }, data: { status: remote.status } });
  });
  await finish(ev.id, 'processed', null, payment.tenantId);
-}
-
-async function settle(tx: Tx, tenantId: string, paymentId: string, invoiceId: string) {
- const now = new Date();
- await tx.billingPayment.update({ where: { id: paymentId }, data: { status: 'succeeded', paidAt: now } });
- const invoice = await tx.billingInvoice.update({ where: { id: invoiceId }, data: { status: 'paid', paidAt: now } });
- if (!invoice.orderId) return;
- await tx.commerceOrder.update({ where: { id: invoice.orderId }, data: { status: 'paid' } });
- const lines = await tx.billingInvoiceLine.findMany({ where: { tenantId, invoiceId } });
- const prices = await tx.catalogPrice.findMany({ where: { id: { in: lines.map(l => l.priceId!).filter(Boolean) } } });
- const products = await tx.catalogProduct.findMany({ where: { id: { in: prices.map(p => p.productId) } } });
- const subs = await tx.commerceSubscription.findMany({ where: { tenantId, orderId: invoice.orderId } });
- for (const line of lines) {
-  const price = prices.find(p => p.id === line.priceId); const product = price && products.find(p => p.id === price.productId);
-  if (!price || !product) continue;
-  const periodEnd = price.interval === 'one_time' ? null : addInterval(now, price.interval);
-  const sub = subs.find(s => s.priceId === price.id);
-  if (sub) await tx.commerceSubscription.update({ where: { id: sub.id }, data: { status: 'active', currentPeriodStart: now, currentPeriodEnd: periodEnd } });
-  const key = product.templateId ? `mission.${product.templateId}` : `product.${product.id}`;
-  await tx.commerceEntitlement.upsert({ where: { tenantId_key_source_sourceId: { tenantId, key, source: sub ? 'subscription' : 'order', sourceId: sub?.id ?? invoice.orderId } }, create: { id: randomUUID(), tenantId, key, source: sub ? 'subscription' : 'order', sourceId: sub?.id ?? invoice.orderId, quantity: line.quantity, validFrom: now, validUntil: periodEnd }, update: { status: 'active', validUntil: periodEnd } });
-  // A paid mission enters provisioning; going live still requires acceptance tests and a human decision.
-  if (product.kind === 'mission' && product.templateId) {
-   const t = await tx.catalogMissionTemplate.findUniqueOrThrow({ where: { id: product.templateId } });
-   await tx.commerceMission.upsert({ where: { tenantId_source_sourceId_templateId: { tenantId, source: 'order', sourceId: invoice.orderId, templateId: t.id } }, create: { id: randomUUID(), tenantId, templateId: t.id, kind: t.kind, capacity: t.capacity as Prisma.InputJsonValue, source: 'order', sourceId: invoice.orderId }, update: {} });
-  }
- }
- await tx.commerceOrder.update({ where: { id: invoice.orderId }, data: { status: 'fulfilling' } });
- await tx.auditEvent.create({ data: { tenantId, actorId: 'billing', action: 'invoice.paid', objectId: invoiceId } });
 }
 
 // Trials end on time: entitlement expires, mission completes, the sales team sees it in the pipeline.
@@ -66,4 +40,26 @@ export async function expireTrials() {
   await tx.crmActivity.create({ data: { id: randomUUID(), tenantId: HOUSE, leadId: t.leadId, kind: 'trial.expired', note: `trial=${t.id}`, actor: 'system' } });
  });
  return due.length;
+}
+
+// Invoice delivery by email through Resend (RESEND_API_KEY, RESEND_FROM). Without a key, deliveries stay queued.
+// Idempotency-Key = delivery id, so a retry after a timeout never sends twice.
+const SUBJECT: Record<string, string> = { 'pt-BR': 'Fatura {n} — AtlasHub', 'pt-PT': 'Fatura {n} — AtlasHub', en: 'Invoice {n} — AtlasHub', es: 'Factura {n} — AtlasHub', fr: 'Facture {n} — AtlasHub' };
+export async function deliverInvoices() {
+ if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM) return 0;
+ const queued = await scoped(db, { scope: 'platform', userId: 'delivery' }, tx => tx.billingDelivery.findMany({ where: { status: 'queued', channel: 'email', attempts: { lt: 5 } }, take: 20, orderBy: { createdAt: 'asc' } }));
+ for (const d of queued) {
+  const doc = await scoped(db, { tenantId: d.tenantId }, async tx => {
+   const v = await tx.billingInvoice.findFirstOrThrow({ where: { tenantId: d.tenantId, id: d.invoiceId } });
+   const [issuer, account, lines] = await Promise.all([tx.billingIssuer.findUniqueOrThrow({ where: { id: v.issuerId } }), tx.billingAccount.findUniqueOrThrow({ where: { id: v.accountId } }), tx.billingInvoiceLine.findMany({ where: { tenantId: d.tenantId, invoiceId: v.id } })]);
+   return { number: v.number ?? '', locale: asLocale(v.locale), html: renderInvoiceHtml({ ...v, locale: asLocale(v.locale), issuer, account, lines }) };
+  });
+  let status = 'sent', error: string | null = null;
+  try {
+   const r = await fetch('https://api.resend.com/emails', { method: 'POST', signal: AbortSignal.timeout(15000), redirect: 'error', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': d.id }, body: JSON.stringify({ from: process.env.RESEND_FROM, to: [d.recipient], subject: SUBJECT[doc.locale].replace('{n}', doc.number), html: doc.html, ...(process.env.RESEND_REPLY_TO ? { reply_to: process.env.RESEND_REPLY_TO } : {}) }) });
+   if (!r.ok) { status = r.status >= 500 || r.status === 429 ? 'queued' : 'failed'; error = `resend_${r.status}`; }
+  } catch { status = 'queued'; error = 'resend_unreachable'; }
+  await scoped(db, { tenantId: d.tenantId }, tx => tx.billingDelivery.update({ where: { id: d.id }, data: { status, lastError: error, attempts: { increment: 1 }, ...(status === 'sent' ? { sentAt: new Date() } : {}) } }));
+ }
+ return queued.length;
 }

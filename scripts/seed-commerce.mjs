@@ -8,10 +8,11 @@ const HOUSE='atlashub';
 await db.tenant.upsert({where:{id:HOUSE},create:{id:HOUSE,slug:'atlashub',name:'AtlasHub (house)'},update:{}});
 for(const [userId,role] of [['house-owner','atlas_owner'],['house-operator','atlas_operator']])await db.membership.upsert({where:{tenantId_userId:{tenantId:HOUSE,userId}},create:{tenantId:HOUSE,userId,role},update:{}});
 const issuers=[
- {id:'atlashub-uk',legalName:'AtlasHub Holding (UK) — razão social a confirmar',country:'GB',taxId:'UK-COMPANY-NUMBER-TBC',address:{country:'GB'},currencies:['EUR','USD'],series:'AH-UK',email:'billing@atlashub.digital'},
- {id:'atlashub-br',legalName:'AtlasHub Brasil — razão social a confirmar',country:'BR',taxId:'CNPJ-A-CONFIRMAR',address:{city:'Goiânia',country:'BR',line1:'GO'},currencies:['BRL'],series:'AH-BR',email:'financeiro@atlashub.digital'},
+ {id:'atlashub-uk',legalName:'ATLAS GLOBAL TECH LTD',country:'GB',taxId:'Company number 17401190',address:{line1:'71-75 Shelton Street, Covent Garden',city:'London',postal_code:'WC2H 9JQ',country:'GB'},currencies:['EUR','USD'],series:'AH-UK',email:'billing@atlashub.digital'},
+ {id:'atlashub-br',legalName:'AtlasHub - ME',country:'BR',taxId:'CNPJ 66.991.513/0001-10',address:{line1:'Avenida Portugal, Setor Oeste',city:'Goiânia - GO',postal_code:'74140-020',country:'BR'},currencies:['BRL'],series:'AH-BR',email:'financeiro@atlashub.digital'},
 ];
-for(const i of issuers)await db.billingIssuer.upsert({where:{id:i.id},create:i,update:{}});
+// Legal identity of the issuers is AtlasHub's own data: kept in sync on every seed.
+for(const i of issuers)await db.billingIssuer.upsert({where:{id:i.id},create:i,update:{legalName:i.legalName,taxId:i.taxId,address:i.address,email:i.email}});
 // [role, capacity, pt-BR, pt-PT, en, es, fr] each locale: [name, objective, scopeIn, scopeOut]
 const T=[
  ['ROLE-001',{conversations_per_month:500},
@@ -72,7 +73,11 @@ for(const [roleId,capacity,...texts] of T){
   await db.catalogMissionTemplateI18n.upsert({where:{templateId_locale:{templateId,locale:L[k]}},create:{templateId,locale:L[k],name,objective,scopeIn,scopeOut},update:{}});
   await db.catalogProductI18n.upsert({where:{productId_locale:{productId,locale:L[k]}},create:{productId,locale:L[k],name,description:objective},update:{}});
  }
- for(const currency of ['BRL','EUR','USD'])await db.catalogPrice.upsert({where:{id:`${productId}-${currency.toLowerCase()}-month`},create:{id:`${productId}-${currency.toLowerCase()}-month`,productId,currency,pricingModel:'flat',interval:'month',amountMinor:null,trialDays:7,status:'draft'},update:{}});
+ // Launch pricing (Founder 2026-10-09): 0 with a 3-day trial until real prices are set. Market by currency:
+ // BRL Brazil, EUR Europe, USD rest of the world. Prices that already have an amount are never overwritten.
+ for(const [currency,market] of [['BRL','BR'],['EUR','EU'],['USD','*']]){const id=`${productId}-${currency.toLowerCase()}-month`;
+  await db.catalogPrice.upsert({where:{id},create:{id,productId,currency,pricingModel:'flat',interval:'month',amountMinor:0n,trialDays:3,market,status:'active'},update:{}});
+  await db.catalogPrice.updateMany({where:{id,amountMinor:null},data:{amountMinor:0n,trialDays:3,market,status:'active'}});}
 }
-console.log('Commerce seed: house tenant, 2 issuers, 8 templates x 5 locales, 8 products, 24 draft prices; existing data preserved');
+console.log('Commerce seed: house tenant, 2 issuers, 8 templates x 5 locales, 8 products, 24 launch prices (0, 3-day trial); existing amounts preserved');
 await db.$disconnect();

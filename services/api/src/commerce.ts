@@ -4,7 +4,8 @@ import { z } from 'zod';
 import type { Prisma } from '@prisma/client';
 import { withDb, billingQueue } from './context.js';
 import { identity } from './auth.js';
-import { asLocale, pick, CONSENT_TEXT, CONSENT_VERSION, DISCLAIMER, COMMERCE_LOCALES, CURRENCIES } from '../../../packages/commerce/i18n.js';
+import { asLocale, pick, CONSENT_TEXT, CONSENT_VERSION, DISCLAIMER, COMMERCE_LOCALES, CURRENCIES, currencyFor } from '../../../packages/commerce/i18n.js';
+import { settleInvoice } from '../../../packages/commerce/settle.js';
 import { simulationInput, simulate, leadInput, trialInput, normEmail, normPhone, suppressionHash, tokenHash, fitScore, STAGES, STAGE_MOVES, toNumber } from '../../../packages/commerce/funnel.js';
 import { ADAPTERS, chooseProvider } from '../../../packages/commerce/payments.js';
 import { renderInvoiceHtml, invoiceNumber } from '../../../packages/commerce/invoice.js';
@@ -43,8 +44,9 @@ async function upsertLead(tx: Tx, i: z.infer<typeof leadInput>, purpose: 'contac
 @Controller()
 export class Commerce {
  // ---------- Public funnel (site, simulators, Clara) ----------
- @Get('v1/public/catalog') async catalog(@Query('locale') l?: string, @Query('currency') c?: string) {
-  const locale = asLocale(l); const currency = (CURRENCIES as readonly string[]).includes(String(c)) ? String(c) : 'BRL';
+ @Get('v1/public/catalog') async catalog(@Query('locale') l?: string, @Query('currency') c?: string, @Query('country') country?: string) {
+  // Market currency: Brazil BRL, Europe EUR, rest of the world USD (explicit ?currency= wins).
+  const locale = asLocale(l); const currency = (CURRENCIES as readonly string[]).includes(String(c)) ? String(c) : currencyFor(country, locale);
   return withDb({}, async tx => {
    const templates = await tx.catalogMissionTemplate.findMany({ where: { status: 'active' }, orderBy: { id: 'asc' } });
    const ti18n = await tx.catalogMissionTemplateI18n.findMany({ where: { templateId: { in: templates.map(t => t.id) } } });
@@ -56,10 +58,10 @@ export class Commerce {
   });
  }
  @Post('v1/public/simulate') @HttpCode(200) async simulate(@Body() body: unknown) {
-  const i = parse(simulationInput, body); const out = simulate(i);
+  const i = parse(simulationInput, body); const out = simulate(i); const currency = i.currency ?? currencyFor(i.country, i.locale);
   // Price is shown only when an approved (active) price exists for this template and currency.
-  const price = i.templateId ? await withDb({}, async tx => { const product = await tx.catalogProduct.findFirst({ where: { templateId: i.templateId, kind: 'mission', status: 'active' } }); return product ? tx.catalogPrice.findFirst({ where: { productId: product.id, currency: i.currency, status: 'active', interval: 'month' } }) : null; }) : null;
-  return { ...out, currency: i.currency, monthlyPriceMinor: toNumber(price?.amountMinor), priceId: price?.id ?? null, disclaimer: DISCLAIMER[i.locale] };
+  const price = i.templateId ? await withDb({}, async tx => { const product = await tx.catalogProduct.findFirst({ where: { templateId: i.templateId, kind: 'mission', status: 'active' } }); return product ? tx.catalogPrice.findFirst({ where: { productId: product.id, currency, status: 'active', interval: 'month' } }) : null; }) : null;
+  return { ...out, currency, monthlyPriceMinor: toNumber(price?.amountMinor), priceId: price?.id ?? null, disclaimer: DISCLAIMER[i.locale] };
  }
  @Get('v1/public/consent-text') consentText(@Query('purpose') purpose = 'contact_sales', @Query('locale') l?: string) {
   const p = purpose === 'trial' ? 'trial' : 'contact_sales'; const locale = asLocale(l);
@@ -117,7 +119,10 @@ export class Commerce {
    await tx.auditEvent.create({ data: { tenantId, actorId: 'quote-accept', action: 'tenant.create.quote', objectId: quote.id } });
    return { tenantId, invoice, account };
   });
-  const payment = await startPayment(result.tenantId, result.invoice.id);
+  // Launch pricing can be zero: nothing to charge, the invoice is settled at once (no payment provider involved).
+  const payment = result.invoice.totalMinor === 0n
+   ? (await withDb({ tenantId: result.tenantId }, tx => settleInvoice(tx, result.tenantId, result.invoice.id, null, 'zero-total')), { provider: 'none', status: 'not_required' })
+   : await startPayment(result.tenantId, result.invoice.id);
   return { tenant: result.tenantId, invoice: { id: result.invoice.id, number: result.invoice.number, totalMinor: toNumber(result.invoice.totalMinor), currency: result.invoice.currency }, payment };
  }
 

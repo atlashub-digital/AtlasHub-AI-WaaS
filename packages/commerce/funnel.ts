@@ -10,7 +10,7 @@ const roleId = z.enum(['ROLE-001', 'ROLE-002', 'ROLE-003', 'ROLE-004', 'ROLE-005
 const utm = z.object({ source: z.string().max(80), medium: z.string().max(80), campaign: z.string().max(120), term: z.string().max(120), content: z.string().max(120) }).partial().strict();
 
 export const simulationInput = z.object({
- roleId, locale: locale.default('pt-BR'), currency: z.enum(CURRENCIES).default('BRL'), templateId: z.string().max(80).optional(),
+ roleId, locale: locale.default('pt-BR'), currency: z.enum(CURRENCIES).optional(), country: z.string().length(2).optional(), templateId: z.string().max(80).optional(),
  volumePerMonth: z.number().int().min(1).max(1_000_000), minutesPerTask: z.number().min(0.5).max(240), automatablePct: z.number().min(0).max(100),
  hourlyCostMinor: z.number().int().min(0).max(10_000_000).optional(),
 }).strict();

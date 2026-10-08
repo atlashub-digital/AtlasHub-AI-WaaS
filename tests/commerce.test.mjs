@@ -3,7 +3,7 @@ import test from 'node:test';import assert from 'node:assert/strict';import {cre
 import {verifyStripeSignature,verifyMercadoPagoSignature} from '../dist/packages/commerce/payments.js';
 import {normPhone,simulate,fitScore,leadInput,STAGE_MOVES} from '../dist/packages/commerce/funnel.js';
 import {renderInvoiceHtml,invoiceNumber,money} from '../dist/packages/commerce/invoice.js';
-import {pick,CONSENT_TEXT,COMMERCE_LOCALES} from '../dist/packages/commerce/i18n.js';
+import {pick,CONSENT_TEXT,COMMERCE_LOCALES,currencyFor} from '../dist/packages/commerce/i18n.js';
 const secret='whsec_synthetic_secret_for_tests_only';const now=()=>Math.floor(Date.now()/1000);
 test('Stripe signature: valid, tampered, wrong secret and stale are distinguished',()=>{
  const raw=Buffer.from('{"id":"evt_1","type":"checkout.session.completed"}');const t=now();const sig=`t=${t},v1=${createHmac('sha256',secret).update(`${t}.${raw}`).digest('hex')}`;
@@ -41,4 +41,8 @@ test('invoice document escapes content, formats money per locale and carries the
  const doc={number:invoiceNumber('AH-BR',2026,7),status:'open',currency:'BRL',locale:'pt-BR',issuedAt:new Date('2026-10-09'),dueAt:null,subtotalMinor:150000n,taxMinor:0n,totalMinor:150000n,issuer:{legalName:'AtlasHub Brasil',taxId:'CNPJ',country:'BR',address:{},email:'f@x.test'},account:{legalName:'<script>x</script>',taxId:null,country:'BR',email:'c@x.test',address:{}},lines:[{description:'Missão',quantity:1,unitMinor:150000n,amountMinor:150000n}]};
  const html=renderInvoiceHtml(doc);
  assert.equal(doc.number,'AH-BR-2026-000007');assert.ok(!html.includes('<script>x'));assert.ok(html.includes(money(150000,'BRL','pt-BR')));assert.match(html,/Não substitui a nota fiscal/);
+});
+test('market currency: Brazil BRL, Europe EUR, rest of the world USD',()=>{
+ assert.equal(currencyFor('BR'),'BRL');assert.equal(currencyFor('pt'),'EUR');assert.equal(currencyFor('GB'),'EUR');assert.equal(currencyFor('US'),'USD');assert.equal(currencyFor('AO'),'USD');
+ assert.equal(currencyFor(null,'pt-BR'),'BRL');assert.equal(currencyFor(null,'fr'),'EUR');assert.equal(currencyFor(null,'en'),'USD');
 });

@@ -9,21 +9,24 @@ async function call(path,{sub,method='GET',body,headers={}}={}){const r=await fe
 const until=async(fn,ms=15000)=>{const end=Date.now()+ms;for(;;){const v=await fn();if(v)return v;if(Date.now()>end)throw new Error('timeout');await new Promise(r=>setTimeout(r,250));}};
 function sandboxWebhook(payload){const raw=JSON.stringify(payload);const t=Math.floor(Date.now()/1000);return {raw,headers:{'x-sandbox-signature':`t=${t},v1=${createHmac('sha256',process.env.SANDBOX_PAYMENTS_SECRET).update(`${t}.${raw}`).digest('hex')}`}};}
 const person=(extra={})=>({fullName:'Pessoa de Teste',email:`lead.${id()}@example.test`,company:'Clínica Teste',companyDomain:`clinica-${id()}.example.test`,country:'BR',sizeBand:'medium',interestRoles:['ROLE-001'],locale:'pt-BR',consent:true,consentTextVersion:CONSENT,...extra});
-let testPrice;
-test.before(async()=>{testPrice=`test-price-${id()}`;await db.catalogPrice.create({data:{id:testPrice,productId:'prd-001-mission',currency:'BRL',pricingModel:'flat',interval:'month',amountMinor:150000n,status:'active'}});});
-test.after(async()=>{await db.catalogPrice.update({where:{id:testPrice},data:{status:'retired'}});await db.$disconnect();});
+// Test prices: a one-time paid setup (never collides with the monthly launch price) and a draft price.
+let testPrice,draftPrice;
+test.before(async()=>{testPrice=`test-price-${id()}`;draftPrice=`test-draft-${id()}`;await db.catalogPrice.create({data:{id:testPrice,productId:'prd-001-mission',currency:'BRL',pricingModel:'flat',interval:'one_time',amountMinor:150000n,status:'active'}});await db.catalogPrice.create({data:{id:draftPrice,productId:'prd-001-mission',currency:'BRL',pricingModel:'flat',interval:'month',amountMinor:9900n,status:'draft'}});});
+test.after(async()=>{await db.catalogPrice.updateMany({where:{id:{in:[testPrice,draftPrice]}},data:{status:'retired'}});await db.$disconnect();});
 
-test('public catalogue serves 8 templates in 5 locales and never shows draft prices',async()=>{
+test('public catalogue serves 8 templates in 5 locales, market currency and launch prices; never draft prices',async()=>{
  const br=await call('/v1/public/catalog?locale=pt-BR&currency=BRL');assert.equal(br.status,200);assert.equal(br.body.templates.length,8);
  assert.equal(br.body.templates.find(t=>t.roleId==='ROLE-001').name,'Recepcionista Digital');
  const fr=await call('/v1/public/catalog?locale=fr&currency=EUR');assert.equal(fr.body.templates.find(t=>t.roleId==='ROLE-008').name,'Assistant RH');
- assert.ok(fr.body.products.every(p=>p.prices.every(x=>x.amountMinor!==null)));assert.equal(fr.body.products.flatMap(p=>p.prices).length,0);
+ const eur=fr.body.products.flatMap(p=>p.prices);assert.equal(eur.length,8);assert.ok(eur.every(x=>x.amountMinor===0&&x.trialDays===3));
+ assert.ok(!br.body.products.flatMap(p=>p.prices).some(x=>x.id===draftPrice));
+ assert.equal((await call('/v1/public/catalog?country=BR')).body.currency,'BRL');assert.equal((await call('/v1/public/catalog?country=DE')).body.currency,'EUR');assert.equal((await call('/v1/public/catalog?country=US')).body.currency,'USD');assert.equal((await call('/v1/public/catalog?locale=fr')).body.currency,'EUR');
  const consent=await call('/v1/public/consent-text?purpose=trial&locale=es');assert.equal(consent.body.version,CONSENT);assert.match(consent.body.text,/prueba gratuita/);
 });
 test('simulation returns an explainable hypothesis and a price only when approved',async()=>{
  const s=await call('/v1/public/simulate',{method:'POST',body:{roleId:'ROLE-001',templateId:'tpl-001-standard',currency:'BRL',locale:'pt-BR',volumePerMonth:600,minutesPerTask:5,automatablePct:60}});
- assert.equal(s.status,200);assert.equal(s.body.hoursSaved,30);assert.equal(s.body.monthlyPriceMinor,150000);assert.match(s.body.disclaimer,/Hipótese/);
- const eur=await call('/v1/public/simulate',{method:'POST',body:{roleId:'ROLE-001',templateId:'tpl-001-standard',currency:'EUR',locale:'en',volumePerMonth:600,minutesPerTask:5,automatablePct:60}});assert.equal(eur.body.monthlyPriceMinor,null);
+ assert.equal(s.status,200);assert.equal(s.body.hoursSaved,30);assert.equal(s.body.monthlyPriceMinor,0);assert.match(s.body.disclaimer,/Hipótese/);
+ const us=await call('/v1/public/simulate',{method:'POST',body:{roleId:'ROLE-001',templateId:'tpl-001-standard',country:'US',locale:'en',volumePerMonth:600,minutesPerTask:5,automatablePct:60}});assert.equal(us.body.currency,'USD');assert.equal(us.body.monthlyPriceMinor,0);
 });
 test('lead capture: consent evidence, deduplication, honeypot and stale consent text are handled',async()=>{
  const p=person({simulation:{volumePerMonth:600}});
@@ -52,7 +55,7 @@ test('quote → acceptance → invoice → verified payment unlocks entitlement 
  const p=person();await call('/v1/public/leads',{method:'POST',body:p});
  const lead=await db.crmLead.findFirst({where:{tenantId:'atlashub',contactId:(await db.crmContact.findFirst({where:{emailNorm:p.email}})).id}});
  const q=await call('/v1/ops/quotes',{sub:'house-operator',method:'POST',body:{leadId:lead.id,currency:'BRL',locale:'pt-BR',country:'BR',lines:[{priceId:testPrice,quantity:1}]}});assert.equal(q.status,201);assert.equal(q.body.totalMinor,150000);assert.equal(q.body.issuerId,'atlashub-br');
- assert.equal((await call('/v1/ops/quotes',{sub:'house-operator',method:'POST',body:{leadId:lead.id,currency:'BRL',locale:'pt-BR',lines:[{priceId:'prd-001-mission-brl-month',quantity:1}]}})).status,400);
+ assert.equal((await call('/v1/ops/quotes',{sub:'house-operator',method:'POST',body:{leadId:lead.id,currency:'BRL',locale:'pt-BR',lines:[{priceId:draftPrice,quantity:1}]}})).status,400);
  const sent=await call(`/v1/ops/quotes/${q.body.id}/send`,{sub:'house-operator',method:'POST'});assert.equal(sent.status,200);
  const acc=await call('/v1/public/quotes/accept',{method:'POST',body:{token:sent.body.acceptToken,acceptedBy:'Pessoa de Teste',billing:{legalName:'Clínica Teste Ltda',country:'BR',email:'financeiro@example.test',address:{city:'Goiânia'}}}});
  assert.equal(acc.status,201);assert.match(acc.body.invoice.number,/^AH-BR-\d{4}-\d{6}$/);assert.equal(acc.body.payment.provider,'sandbox');assert.equal(acc.body.payment.method,'pix');assert.match(acc.body.payment.checkout.qr_code,/^SANDBOX-PIX-/);
@@ -68,8 +71,8 @@ test('quote → acceptance → invoice → verified payment unlocks entitlement 
  assert.equal((await call('/v1/webhooks/payments/sandbox',{method:'POST',body:good.raw,headers:good.headers})).body.duplicate,false);
  assert.equal((await call('/v1/webhooks/payments/sandbox',{method:'POST',body:good.raw,headers:good.headers})).body.duplicate,true);
  await until(async()=>(await db.billingInvoice.findFirst({where:{tenantId:tenant}})).status==='paid');
- const ent=await db.commerceEntitlement.findMany({where:{tenantId:tenant}});assert.equal(ent.length,1);assert.equal(ent[0].key,'mission.tpl-001-standard');assert.equal(ent[0].source,'subscription');
- assert.equal((await db.commerceSubscription.findFirst({where:{tenantId:tenant}})).status,'active');assert.equal(await db.commerceMission.count({where:{tenantId:tenant,source:'order'}}),1);
+ const ent=await db.commerceEntitlement.findMany({where:{tenantId:tenant}});assert.equal(ent.length,1);assert.equal(ent[0].key,'mission.tpl-001-standard');assert.equal(ent[0].source,'order');assert.equal(ent[0].validUntil,null);
+ assert.equal(await db.commerceSubscription.count({where:{tenantId:tenant}}),0);assert.equal(await db.commerceMission.count({where:{tenantId:tenant,source:'order'}}),1);
  assert.equal((await db.crmLead.findUnique({where:{id:lead.id}})).stage,'won');
  await db.membership.create({data:{tenantId:tenant,userId:'customer-admin',role:'tenant_admin'}});
  const list=await call(`/v1/billing/invoices?tenant=${tenant}`,{sub:'customer-admin'});assert.equal(list.body[0].totalMinor,150000);
@@ -97,4 +100,17 @@ test('pipeline rules and isolation: invalid moves rejected, customers cannot rea
  assert.equal((await call(`/v1/ops/crm/leads/${lead.id}/stage`,{sub:'house-operator',method:'POST',body:{stage:'contacted'}})).status,201);
  assert.equal((await call('/v1/ops/crm/leads',{sub:'admin-A'})).status,403);
  const leads=await call('/v1/ops/crm/leads?stage=contacted',{sub:'house-operator'});assert.ok(leads.body.some(l=>l.id===lead.id));
+});
+test('launch pricing: a zero-total proposal is settled at acceptance without any payment provider',async()=>{
+ const p=person();await call('/v1/public/leads',{method:'POST',body:p});
+ const lead=await db.crmLead.findFirst({where:{tenantId:'atlashub',contactId:(await db.crmContact.findFirst({where:{emailNorm:p.email}})).id}});
+ const q=await call('/v1/ops/quotes',{sub:'house-operator',method:'POST',body:{leadId:lead.id,currency:'EUR',locale:'fr',country:'FR',lines:[{priceId:'prd-005-mission-eur-month',quantity:1}]}});
+ assert.equal(q.status,201);assert.equal(q.body.totalMinor,0);assert.equal(q.body.issuerId,'atlashub-uk');
+ const sent=await call(`/v1/ops/quotes/${q.body.id}/send`,{sub:'house-operator',method:'POST'});
+ const acc=await call('/v1/public/quotes/accept',{method:'POST',body:{token:sent.body.acceptToken,acceptedBy:'Personne Test',billing:{legalName:'Société Test SAS',country:'FR',email:'compta@example.test'}}});
+ assert.equal(acc.status,201);assert.match(acc.body.invoice.number,/^AH-UK-\d{4}-\d{6}$/);assert.deepEqual(acc.body.payment,{provider:'none',status:'not_required'});
+ const inv=await db.billingInvoice.findFirst({where:{tenantId:acc.body.tenant}});assert.equal(inv.status,'paid');assert.equal(await db.billingPayment.count({where:{tenantId:acc.body.tenant}}),0);
+ const ent=await db.commerceEntitlement.findFirst({where:{tenantId:acc.body.tenant}});assert.equal(ent.key,'mission.tpl-005-standard');assert.equal(ent.source,'subscription');assert.ok(ent.validUntil>new Date());
+ assert.equal((await db.commerceSubscription.findFirst({where:{tenantId:acc.body.tenant}})).status,'active');
+ assert.equal(await db.billingDelivery.count({where:{tenantId:acc.body.tenant,channel:'email',status:{in:['queued','sent']}}}),1);
 });

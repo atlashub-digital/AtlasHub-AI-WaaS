@@ -37,3 +37,12 @@ export const DISCLAIMER: Record<CommerceLocale, string> = {
  es: 'Hipótesis calculada con las cifras indicadas. No es una previsión ni un resultado garantizado.',
  fr: "Hypothèse calculée à partir des chiffres fournis. Ce n'est ni une prévision ni un résultat garanti.",
 };
+
+// Currency by market (Founder decision 2026-10-09): Brazil → BRL, Europe → EUR, rest of the world → USD.
+const EUROPE = new Set(['AT','BE','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IE','IT','LV','LT','LU','MT','NL','PL','PT','RO','SK','SI','ES','SE','IS','LI','NO','CH','GB','AD','MC','SM','VA','ME','AL','MK','RS','BA','MD','UA']);
+export function currencyFor(country?: string | null, locale?: string | null): typeof CURRENCIES[number] {
+ const c = country?.toUpperCase();
+ if (c) return c === 'BR' ? 'BRL' : EUROPE.has(c) ? 'EUR' : 'USD';
+ return locale === 'pt-BR' ? 'BRL' : locale === 'pt-PT' || locale === 'es' || locale === 'fr' ? 'EUR' : 'USD';
+}
+export const marketFor = (currency: string) => currency === 'BRL' ? 'BR' : currency === 'EUR' ? 'EU' : '*';
