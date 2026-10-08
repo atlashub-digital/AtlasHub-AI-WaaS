@@ -22,7 +22,9 @@ export async function callN8nTool(context:{tenantId:string;deploymentId:string;r
  if(!base||secret.length<32)throw new Error('tool_unavailable');
  const url=new URL(`/webhook/${packSlug}/${toolId.replace('.','-')}`,base);if(url.protocol!=='https:')throw new Error('tool_unavailable');
  const body=JSON.stringify({identity:context,tool:toolId,input,timestamp:new Date().toISOString()});
- const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':`${context.runId}:${toolId}`,'X-Atlas-Signature':createHmac('sha256',secret).update(body).digest('hex')},body,signal:AbortSignal.timeout(Number(process.env.N8N_TIMEOUT_MS??5000)),redirect:'error'});
+ // X-Atlas-Token is checked by the n8n Webhook node (Header Auth credential); the HMAC lets workflows verify the body.
+ const token=process.env.N8N_TOKEN;
+ const response=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json','Idempotency-Key':`${context.runId}:${toolId}`,'X-Atlas-Signature':createHmac('sha256',secret).update(body).digest('hex'),...(token?{'X-Atlas-Token':token}:{})},body,signal:AbortSignal.timeout(Number(process.env.N8N_TIMEOUT_MS??5000)),redirect:'error'});
  if(!response.ok)throw new Error('tool_failed');
  return z.record(z.string(),z.unknown()).parse(await response.json()) as Record<string,any>;
 }

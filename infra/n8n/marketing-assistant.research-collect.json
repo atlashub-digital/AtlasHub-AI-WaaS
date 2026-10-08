@@ -1,0 +1,45 @@
+{
+  "name": "waas-staging · marketing-assistant · research.collect",
+  "nodes": [
+    {
+      "id": "c6f1a0e2-5b1d-4f0e-9d3a-1a0f00000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 0],
+      "webhookId": "7d3c8a51-1f6e-4c2b-9e7a-2b0f00000001",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "marketing-assistant/research-collect",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "credentials": { "httpHeaderAuth": { "id": "__CREDENTIAL_ID__", "name": "waas-staging X-Atlas-Token" } }
+    },
+    {
+      "id": "c6f1a0e2-5b1d-4f0e-9d3a-1a0f00000002",
+      "name": "Collect approved sources",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 0],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Read-only research over public feeds already approved for the editorial pilot.\n// Replayed or stale requests (older than 5 minutes) get an empty result.\nconst body = $input.first().json.body ?? {};\nconst ts = Date.parse(body.timestamp ?? '');\nif (!ts || Math.abs(Date.now() - ts) > 300000) return [{ json: { items: [] } }];\nconst topic = String(body.input?.topic ?? '').toLowerCase().slice(0, 80);\nconst feeds = ['https://blog.n8n.io/rss/', 'https://blog.google/technology/ai/rss/', 'https://github.blog/feed/'];\nconst pages = await Promise.all(feeds.map(url => this.helpers.httpRequest({ url, method: 'GET', timeout: 3000, json: false }).catch(() => '')));\nconst items = [];\nfor (const xml of pages) for (const m of String(xml).matchAll(/<item>([\\s\\S]*?)<\\/item>/g)) {\n  const title = ((m[1].match(/<title>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/title>/) || [])[1] || '').trim();\n  const url = ((m[1].match(/<link>([\\s\\S]*?)<\\/link>/) || [])[1] || '').trim();\n  if (title && url.startsWith('https://') && (!topic || title.toLowerCase().includes(topic))) items.push({ title: title.slice(0, 200), url, licensed: false });\n}\nreturn [{ json: { items: items.slice(0, 5) } }];"
+      }
+    },
+    {
+      "id": "c6f1a0e2-5b1d-4f0e-9d3a-1a0f00000003",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [480, 0],
+      "parameters": { "respondWith": "firstIncomingItem", "options": {} }
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Collect approved sources", "type": "main", "index": 0 }]] },
+    "Collect approved sources": { "main": [[{ "node": "Respond", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1", "saveDataSuccessExecution": "none", "saveDataErrorExecution": "all" }
+}
