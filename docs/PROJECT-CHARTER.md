@@ -63,7 +63,7 @@ Cada oferta exige: ficha do serviço; pack/versão; matriz de ferramentas; SOP d
 - Patrocinador / decisão comercial: direção AtlasHub.
 - Product Owner AI-WaaS: backlog, margens, catálogo e prioridades.
 - Engenharia (Claude Code/Codex): integração e automações.
-- Operações (Atlas.SI OS/PaperClip + operador responsável): ativação, monitorização, incidentes, escalonamento e relatórios.
+- Operações AI-WaaS (operador responsável + ferramentas do próprio projeto): ativação, monitorização, incidentes, escalonamento e relatórios. Sem dependência do PaperClip.
 - Clara: discovery, demo e encaminhamento comercial; sem promessas não aprovadas.
 - Segurança/privacidade e jurídico: aprovação de canais, acessos, termos e LGPD.
 
