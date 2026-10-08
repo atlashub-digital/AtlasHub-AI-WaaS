@@ -55,6 +55,13 @@ export async function deliverInvoices() {
    return { number: v.number ?? '', locale: asLocale(v.locale), html: renderInvoiceHtml({ ...v, locale: asLocale(v.locale), issuer, account, lines }) };
   });
   let status = 'sent', error: string | null = null;
+  // Staging guard: RESEND_RECIPIENT_DOMAINS limits real sends (e.g. "resend.dev,atlashub.si") so synthetic
+  // addresses never hit the provider and the sending domain keeps its reputation.
+  const allowed = (process.env.RESEND_RECIPIENT_DOMAINS ?? '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
+  if (allowed.length && !allowed.includes(d.recipient.split('@')[1]?.toLowerCase() ?? '')) {
+   await scoped(db, { tenantId: d.tenantId }, tx => tx.billingDelivery.update({ where: { id: d.id }, data: { status: 'skipped', lastError: 'recipient_not_allowed', attempts: { increment: 1 } } }));
+   continue;
+  }
   try {
    const r = await fetch('https://api.resend.com/emails', { method: 'POST', signal: AbortSignal.timeout(15000), redirect: 'error', headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': d.id }, body: JSON.stringify({ from: process.env.RESEND_FROM, to: [d.recipient], subject: SUBJECT[doc.locale].replace('{n}', doc.number), html: doc.html, ...(process.env.RESEND_REPLY_TO ? { reply_to: process.env.RESEND_REPLY_TO } : {}) }) });
    if (!r.ok) { status = r.status >= 500 || r.status === 429 ? 'queued' : 'failed'; error = `resend_${r.status}`; }
