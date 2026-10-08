@@ -9,6 +9,9 @@
 2. [Auditoria dos repositórios existentes](docs/REPOSITORY-AUDIT.md)
 3. [Arquitetura AI-WaaS](docs/ARCHITECTURE.md)
 4. [Roadmap e backlog dos primeiros 30 dias](docs/ROADMAP-30-DAYS.md)
+5. [Catálogo MVP de 8 colaboradores](docs/MVP-8-DIGITAL-EMPLOYEES.md)
+6. [Playbook de implantação VPS](docs/DEPLOYMENT-VPS-PLAYBOOK.md)
+7. [Missão Claude Code — Sprint 0/1](docs/CLAUDE-CODE-MISSION.md)
 
 ## Ecossistema
 | Repositório | Função |
