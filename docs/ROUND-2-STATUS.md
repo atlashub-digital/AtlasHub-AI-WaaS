@@ -50,3 +50,20 @@ A auditoria detalhada das VPS fica no repositório privado `atlas-ops`, porque e
 4. **Riscos:** o Supabase tem a 001 sem a 002/003; verificado que `anon`, `authenticated` e `service_role` não têm nenhum grant nas tabelas, e as tabelas estão vazias.
 5. **Bloqueios:** a aplicação das migrations 002/003 no Supabase foi recusada pela política de permissões da sessão.
 6. **Próxima ação:** aplicar 002/003 no Supabase; criar o login de `waas_runtime` por verificador SCRAM (a password fica só na VPS); ligar o staging ao Supabase pelo pooler; Auth Supabase real com utilizadores de teste; repetir A/B.
+
+## Checkpoint 5 — 2026-10-08
+
+1. **Verificado:** os 8 colaboradores digitais funcionam ponta a ponta em staging remoto, contra sistemas sandbox stateful (CRM, caixa de correio, imóveis, encomendas, conteúdos, faturas/extratos, candidaturas). Registo técnico em [ROLES.md](ROLES.md).
+2. **Alterado:**
+   - Motor genérico de roles (`packages/roles`, `services/worker/src/engine.ts`) para ROLE-002..008. A ROLE-001 mantém o executor do Round 1.
+   - Gateway de tools com grant, schema e política por tool (automática, aprovação humana ou proibida); aprovações ligadas a um hash do input; efeitos idempotentes por run; rascunhos congelados por run; remoção de atributos sensíveis (RH).
+   - Camada de IA opcional (Claude, desligada por defeito, `LLM_ENABLED=1`): só classifica mensagens não reconhecidas e escreve rascunhos que exigem aprovação.
+   - Migration 005 (`SandboxRecord` com RLS), aplicada no staging da VPS e no Supabase.
+   - Seed `seed-roles.mjs`, adaptador n8n por tool e contratos de inbound e provisionamento alargados aos 8 roles.
+3. **Testes:**
+   - Staging remoto: ROLE-001 E2E **14/14**, segurança DB **2/2**, RLS **6/6**, `tests/roles.e2e.mjs` **10/10**, repetível sem reset.
+   - Supabase: RLS **6/6** pelo pooler (TLS) com `waas_runtime`.
+   - GitHub Actions: **PASS** ([run 37750160306](https://github.com/atlashub-digital/AtlasHub-AI-WaaS/actions/runs/37750160306)).
+4. **Riscos:** as integrações reais (CRM, email, ERP, loja, ATS, redes sociais) ainda são sandboxes; o n8n existe mas os workflows por tool não estão ativos; a IA não foi exercitada com chave real (falta `ANTHROPIC_API_KEY` no staging).
+5. **Bloqueios:** ativação de workflows n8n (precisa de acesso de owner ao n8n ou de autorização para reiniciar o serviço); Auth Supabase real (utilizadores de teste); chave da API Anthropic para testar a IA.
+6. **Próxima ação:** packs 004–008 no `atlas-agent-packs`; catálogo da App com os 8 roles em demo funcional; workflows n8n; Auth Supabase; Fase B (CRM/catálogo comercial).
