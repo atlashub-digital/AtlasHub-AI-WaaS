@@ -8,7 +8,8 @@
 DO $$ BEGIN
  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='waas_runtime') THEN CREATE ROLE waas_runtime NOLOGIN NOINHERIT; END IF;
 END $$;
-ALTER ROLE waas_runtime NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS NOREPLICATION;
+-- CREATE ROLE defaults are NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS NOREPLICATION; managed Postgres
+-- (Supabase) forbids touching SUPERUSER at all, so attributes are asserted in tests/runtime-rls.mjs instead.
 
 CREATE OR REPLACE FUNCTION waas_tenant() RETURNS text LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('app.tenant_id', true), '') $$;
 CREATE OR REPLACE FUNCTION waas_user() RETURNS text LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('app.user_id', true), '') $$;
