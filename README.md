@@ -46,6 +46,15 @@ Não alegar colaboradores ativos ou resultados garantidos antes de homologação
 ## A próxima tarefa
 Auditar CI, builds e infraestrutura; construir o primeiro workflow real do PACK-001; criar o control plane mínimo, e depois ativar piloto assistido. Ver [Roadmap](docs/ROADMAP-30-DAYS.md).
 
+## Round 2 — staging remoto, RLS e os 8 colaboradores
+
+Estado atual em [ROUND-2-STATUS.md](docs/ROUND-2-STATUS.md); alinhamento com o pedido em [ROUND-2-ALIGNMENT.md](docs/ROUND-2-ALIGNMENT.md); modelo comercial (leads, catálogo, missões, faturação, pagamentos, Clara, multilíngue) em [DATA-MODEL-v2.md](docs/DATA-MODEL-v2.md).
+
+- **Os 8 colaboradores** (ROLE-001..008) funcionam ponta a ponta em staging remoto contra sistemas sandbox, com aprovação humana nas ações externas e ações proibidas bloqueadas no servidor. Ver [ROLES.md](docs/ROLES.md).
+- **Isolamento:** a app corre como `waas_runtime` (sem `BYPASSRLS`) com RLS por tenant no caminho real, provado no staging e no Supabase.
+- **IA:** a camada Claude é opcional e está desligada por defeito; nunca decide permissões.
+- **Ainda não homologado:** integrações reais (CRM, email, ERP, loja, ATS, redes sociais), workflows n8n ativos, Auth Supabase real com utilizadores e canal WhatsApp. Nenhum colaborador é anunciado como operacional.
+
 ## Round 1 — desenvolvimento local e staging sintético
 
 Implementação em branch, ainda **não homologada nem instalada na VPS**. Backend NestJS, Prisma/PostgreSQL, worker BullMQ/Redis, calendário sintético transacional e contratos OpenAPI. O frontend e os packs continuam nos seus próprios repositórios. Ver [relatório de entrega](docs/ROUND-1-DELIVERY-REPORT.md) para evidências e limitações; os requisitos originais acima continuam válidos.
