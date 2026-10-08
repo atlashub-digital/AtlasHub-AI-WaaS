@@ -107,3 +107,7 @@ test('cross-cutting: injection never reaches tools, tenants stay isolated, repli
  const es=await wait(await send('008','¿Cuáles son las fases del proceso?',{},{locale:'es'}));assert.match(es.result.reply,/^El proceso/);
 });
 test.after(async()=>{await db.sandboxRecord.deleteMany({where:{tenantId:'tenant-A',key:{in:created}}});await db.$disconnect();});
+test('me/memberships lists only the caller\'s tenants with names',async()=>{
+ const a=await api('/v1/me/memberships','admin-A');assert.equal(a.status,200);assert.deepEqual(a.body.map(m=>m.tenantId),['tenant-A']);assert.equal(a.body[0].name,'Empresa Fictícia A');
+ const none=await api('/v1/me/memberships','nobody-'+id());assert.equal(none.status,200);assert.deepEqual(none.body,[]);
+});
