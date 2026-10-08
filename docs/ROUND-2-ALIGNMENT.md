@@ -36,12 +36,14 @@ Confronta o que o Founder pediu com o que está especificado (Charter, Executive
 4. **Fase C:** planos, subscrições, acessos, faturas, webhooks de pagamento (sandbox do provider).
 5. **Fase D:** missões e alocação; Clara com LLM atrás de feature flag.
 
-## 4. Decisões que preciso do Founder
-| # | Decisão | Proposta por defeito |
-|---|---|---|
-| D-A | Mercados e línguas iniciais | pt-PT, pt-BR, en; es depois |
-| D-B | Providers de pagamento | Stripe (cartão, SEPA, global) + um local por mercado (PIX no BR; MB WAY/Multibanco em PT) |
-| D-C | Emissor de faturas certificado | PT: um software certificado AT com API; BR: emissor NFS-e com API |
-| D-D | Moedas | EUR, BRL, USD |
-| D-E | Clara com LLM | Sim, atrás de feature flag, com limite de custo e aviso de IA |
-| D-F | Residência de dados | Uma região no início; campo `region` por tenant desde já |
+## 4. Decisões do Founder (2026-10-09)
+| # | Decisão | Resposta | Onde está refletida |
+|---|---|---|---|
+| D-A | Línguas | pt-BR (prioritária), pt-PT, en, es, fr | catálogo, consentimentos, faturas e API em 5 línguas; motor de roles ainda em 4 (fr por fazer) |
+| D-B | Pagamentos | Brasil: PIX via Mercado Pago (Stone, PicPay ou outros depois); estrangeiro: Stripe | adaptadores Mercado Pago e Stripe com webhooks verificados; sandbox em staging |
+| D-C | Faturas | Modelo próprio para testes, com envio por email ou outro canal; emissor certificado a validar | documento HTML com aviso de teste, numeração por emissor, fila de entrega |
+| D-D | Moedas | BRL, EUR, USD; o provider adapta na cobrança | preços e faturas só nestas três moedas |
+| D-E | Clara | A Clara é o agente Hermes de atendimento em treino | API de funil como skills da Clara; pacote em `docs/clara/` |
+| D-F | Dados | VPS e base na Europa (Irlanda); holding no Reino Unido; CNPJ próprio em Goiânia (GO) | dois emissores (UK e BR); ver nota LGPD abaixo |
+
+**Nota LGPD:** dados pessoais de clientes e leads brasileiros guardados na Irlanda são uma transferência internacional (LGPD, art. 33). Antes de recolher dados reais: cláusulas-padrão contratuais da ANPD (Res. CD/ANPD 19/2024) nos contratos e na política de privacidade, e registo das operações de tratamento.

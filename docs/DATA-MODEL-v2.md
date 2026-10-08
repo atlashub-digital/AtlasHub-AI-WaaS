@@ -20,6 +20,9 @@ Complementa o modelo operacional do Round 1 (Prisma, schema `public`), que **se 
 
 ## 2. Mapa de domínios
 
+> Implementação (migration `202610090006_commercial`): os domínios usam **prefixos** (`catalog_`, `crm_`, `concierge_`, `commerce_`, `billing_`) no schema `public` em vez de schemas separados, por compatibilidade com o Prisma. Simplificações do MVP: as etapas do pipeline vivem no lead (sem tabela de oportunidades); os add-ons são produtos `addon`; as cadências ficam para a ROLE-002.
+
+
 ```
 core ──── identidade, tenants, membros, regiões, locales, auditoria, feature flags
 catalog ─ roles (colaboradores), packs, módulos, modelos de missão, planos, preços, i18n

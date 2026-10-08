@@ -104,3 +104,30 @@ A auditoria detalhada das VPS fica no repositório privado `atlas-ops`, porque e
 4. **Riscos:** os conteúdos dos feeds não são licenciados para republicação; a IA gratuita só com dados sintéticos.
 5. **Bloqueios:** nenhum para continuar.
 6. **Próxima ação:** workflows n8n das restantes tools com sistemas de teste; endpoint de API para ligar canais (hoje feito em SQL); inbox de teste no Chatwoot; Fase B (CRM/catálogo comercial); OpenAPI dos 8 roles.
+
+## Checkpoint 8 — 2026-10-09 (Fase B)
+
+1. **Verificado:** plataforma comercial ponta a ponta em staging. Catálogo em 5 línguas; simulação; lead com prova de consentimento; teste gratuito de 3 ou 7 dias com aprovação humana e expiração automática; proposta, aceitação, fatura, pagamento (webhook verificado e confirmado no provider), acessos e missão; importação de leads com base legal; supressões.
+2. **Alterado:**
+   - Migration 006 (29 tabelas com RLS), aplicada no staging e no Supabase.
+   - API pública do funil, API de operação e API de faturação do cliente.
+   - Adaptadores de pagamento Mercado Pago (PIX), Stripe e sandbox; worker de faturação.
+   - Seed comercial: tenant interno, emissores UK/BR, 8 missões × 5 línguas, preços em `draft`.
+   - Catálogo carregado no Supabase.
+   - Pacote da Clara para o Hermes (`docs/clara/`).
+3. **Testes:**
+   - Staging: unitários **13/13**; ROLE-001 E2E **14/14**; segurança e RLS **8/8**; roles **10/10**; `tests/commerce.e2e.mjs` **7/7**.
+   - Uma segunda corrida seguida bate no limite de 120 POST/min por IP (429): o limite funciona como previsto.
+   - GitHub Actions: **PASS** ([run 37759899046](https://github.com/atlashub-digital/AtlasHub-AI-WaaS/actions/runs/37759899046)).
+   - Supabase: catálogo em francês servido pela API; lead registado com consentimento em pt-BR.
+4. **Riscos:**
+   - Os preços estão todos em `draft` (nada é mostrado nem cobrado até aprovação).
+   - Os emissores têm dados legais por confirmar.
+   - A fatura é um documento comercial de teste, não fiscal.
+   - Transferência internacional LGPD por formalizar.
+   - Advisor Supabase: "Leaked Password Protection" desligada no Auth.
+5. **Bloqueios:**
+   - Credenciais Mercado Pago e Stripe (em modo teste) para exercitar os providers reais.
+   - Fornecedor de email para a entrega de faturas.
+   - Aprovação dos preços.
+6. **Próxima ação:** página de vendas em funil (simuladores, teste gratuito, proposta) no App.AtlasHub.Si sobre esta API; francês e pt-BR por defeito no motor de roles; endpoint de canais; email transacional.
