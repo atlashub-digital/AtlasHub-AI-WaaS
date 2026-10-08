@@ -24,3 +24,12 @@ A auditoria detalhada das VPS fica no repositório privado `atlas-ops`, porque e
 4. **Riscos:** autenticação ainda em `AUTH_MODE=staging` (JWT partilhado); a ligação DB do backend continua proprietária (RLS por tenant não aplicada no caminho real — ADR-001).
 5. **Bloqueios:** ferramentas Supabase indisponíveis nesta sessão; o primeiro run do script de deploy parou depois das migrations (seed e arranque concluídos à mão, sem erro reproduzível).
 6. **Próxima ação:** auditar e limpar o projeto Supabase; `AUTH_MODE=supabase` (JWKS ES256) com utilizadores de teste; role de runtime mínima e RLS por tenant; repetir A/B.
+
+## Checkpoint 3 — 2026-10-08
+
+1. **Verificado:** acesso administrativo ao projeto Supabase do AI-WaaS. Antes da limpeza o projeto continha apenas dados de teste de outro produto (sem transações), sem dependências em execução.
+2. **Alterado:** projeto Supabase limpo por autorização explícita do Founder (sem backup, a pedido): schema `public` vazio e sem grants por defeito para `anon`/`authenticated`; Auth, Vault e histórico de migrations vazios. Advisor de segurança: sem avisos.
+3. **Testes:** n/a.
+4. **Riscos:** nenhum serviço dependia do projeto (verificado nos containers em execução).
+5. **Bloqueios:** nenhum para o G1.
+6. **Próxima ação:** G1 — `AUTH_MODE=supabase` (JWKS ES256) com utilizadores e memberships de teste; role de runtime mínima e RLS por tenant no caminho real do backend; repetir A/B.
