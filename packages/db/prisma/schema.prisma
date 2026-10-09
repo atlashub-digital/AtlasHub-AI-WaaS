@@ -36,7 +36,22 @@ model PackRelease {
  status String
  @@unique([packId,version,sha])
 }
+model Project {
+ id String @id @default(uuid())
+ tenantId String
+ slug String
+ name String
+ summary String @default("")
+ status String @default("sandbox")
+ modules String[]
+ supervisorUserId String?
+ createdAt DateTime @default(now())
+ updatedAt DateTime @default(now()) @updatedAt
+ @@unique([tenantId,slug])
+ @@unique([tenantId,id])
+}
 model Deployment {
+ projectId String?
  id String @id @default(uuid())
  tenantId String
  roleId String

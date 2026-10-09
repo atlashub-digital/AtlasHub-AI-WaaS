@@ -16,7 +16,7 @@
 
 	@read {
 		method GET
-		path /health /v1/me /v1/me/memberships /v1/entitlements /v1/roles /v1/runs /v1/runs/* /v1/approvals /v1/usage
+		path /health /v1/me /v1/me/memberships /v1/entitlements /v1/roles /v1/runs /v1/runs/* /v1/approvals /v1/usage /v1/projects /v1/expert /v1/usage/summary
 	}
 	@decide {
 		method POST

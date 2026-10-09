@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {RateLimiter} from '../dist/packages/contracts/rate-limit.js';
+test('limiter isolates clients and resets at window boundary',()=>{const l=new RateLimiter(4,1000);assert.equal(l.check('A',1,0).allowed,true);assert.equal(l.check('A',1,1).allowed,false);assert.equal(l.check('B',1,1).allowed,true);assert.equal(l.check('A',1,1000).allowed,true);});
+test('high-cardinality traffic stays bounded and fails closed',()=>{const l=new RateLimiter(2,1000);l.check('A',10,0);l.check('B',10,0);for(let i=0;i<10000;i++)assert.equal(l.check(String(i),10,1).allowed,false);assert.equal(l.size,2);assert.equal(l.check('C',10,1000).allowed,true);});

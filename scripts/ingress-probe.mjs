@@ -25,7 +25,7 @@ for (const [name, path, method] of [
  ['commerce/billing are not exposed', '/v1/public/catalog', 'GET'], ['assessments intake is not exposed', '/v1/assessments', 'POST'],
  ['retry is loopback-only', '/v1/ops/runs/x/retry', 'POST'], ['writes to read routes are refused', '/v1/runs', 'POST'],
 ]) await check(name, path, { method, expect: 404, body: method === 'POST' ? '{}' : undefined });
-for (const path of ['/v1/me', '/v1/me/memberships', '/v1/entitlements', '/v1/runs', '/v1/approvals', '/v1/usage', '/v1/tenants/x/deployments'])
+for (const path of ['/v1/me', '/v1/me/memberships', '/v1/entitlements', '/v1/runs', '/v1/approvals', '/v1/usage', '/v1/projects', '/v1/expert', '/v1/usage/summary', '/v1/roles', '/v1/tenants/x/deployments'])
  await check(`exposed read ${path} needs a verified token`, path, { expect: 401 });
 await check('approval decision needs a verified token', '/v1/approvals/x/decide', { method: 'POST', body: '{}', expect: 401 });
 await check('oversized bodies are cut at the edge', '/v1/approvals/x/decide', { method: 'POST', body: JSON.stringify({ pad: 'x'.repeat(70 * 1024) }), expect: 413 });

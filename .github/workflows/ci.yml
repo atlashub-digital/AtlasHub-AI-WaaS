@@ -36,6 +36,7 @@ jobs:
           node --test tests/roles.e2e.mjs
           node --test tests/commerce.e2e.mjs
           node --test tests/entitlements.e2e.mjs
+          node --test tests/workspaces.e2e.mjs
           node scripts/readiness-recovery.mjs
           scripts/backup-restore.sh
       - uses: actions/upload-artifact@v4
