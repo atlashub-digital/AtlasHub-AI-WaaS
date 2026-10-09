@@ -12,6 +12,7 @@ const PILOTS=[
 for(const p of PILOTS){
  await db.tenant.upsert({where:{id:p.id},create:{id:p.id,slug:p.id,name:p.name},update:{}});
  for(const [userId,role] of [[`${p.id}:admin`,'tenant_admin'],[`${p.id}:viewer`,'tenant_user']])await db.membership.upsert({where:{tenantId_userId:{tenantId:p.id,userId}},create:{tenantId:p.id,userId,role},update:{}});
+ await db.project.upsert({where:{tenantId_slug:{tenantId:p.id,slug:'synthetic-pilot'}},create:{id:'project-'+p.id,tenantId:p.id,slug:'synthetic-pilot',name:'Projeto sintético',summary:'Sem dados reais ou acessos externos',status:'sandbox',modules:p.modules,supervisorUserId:p.id+':admin'},update:{}});
  for(const m of p.modules)await db.commerceEntitlement.upsert({where:{tenantId_key_source_sourceId:{tenantId:p.id,key:`module.${m}`,source:'grant',sourceId:'seed'}},create:{id:`ent-${p.id}-${m}`,tenantId:p.id,key:`module.${m}`,source:'grant',sourceId:'seed'},update:{status:'active',validUntil:null}});
 }
 await db.$disconnect();console.log(`Synthetic pilot tenants prepared: ${PILOTS.length}`);
