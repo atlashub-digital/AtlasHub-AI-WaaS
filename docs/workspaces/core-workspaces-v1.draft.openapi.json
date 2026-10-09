@@ -1,0 +1,1906 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AtlasHub Platform Core — superfície Workspaces (RASCUNHO)",
+    "version": "1.0.0-draft.2",
+    "description": "Proposta WORKSPACES-BE-001. Não é contrato publicado: o contrato publicado continua a ser packages/contracts/openapi.json. Cada operação tem x-status: existing | extended | new. Draft 2 (09/10): hierarquia organização→projetos, módulos (module.<nome>), Atlas Expert por tenant; liderança FE+BE Claude."
+  },
+  "servers": [
+    {
+      "url": "https://<core-api>",
+      "description": "Hostname a definir após G0"
+    }
+  ],
+  "security": [
+    {
+      "Bearer": []
+    }
+  ],
+  "paths": {
+    "/v1/me": {
+      "get": {
+        "operationId": "getMe",
+        "x-status": "new",
+        "summary": "Identidade do chamador + memberships + módulos por tenant",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/me/memberships": {
+      "get": {
+        "operationId": "getMyMemberships",
+        "x-status": "existing (PR #7)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MembershipSummary"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/entitlements": {
+      "get": {
+        "operationId": "getEntitlements",
+        "x-status": "new",
+        "summary": "Entitlements ativos e módulos do tenant (navegação do Workspaces)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Reconciliado com a membership ativa do chamador (nunca é autoridade por si)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EntitlementsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenants/{id}/deployments": {
+      "get": {
+        "operationId": "getDeployments",
+        "x-status": "existing",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Deployment"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs": {
+      "get": {
+        "operationId": "listRuns",
+        "x-status": "existing; extended (filtros e cursor aditivos)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Reconciliado com a membership ativa do chamador (nunca é autoridade por si)."
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/RunState"
+            }
+          },
+          {
+            "name": "deploymentId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 50
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaco; devolvido em nextCursor."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Run"
+                      }
+                    },
+                    {
+                      "$ref": "#/components/schemas/RunPage"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/runs/{id}": {
+      "get": {
+        "operationId": "getRun",
+        "x-status": "existing",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Reconciliado com a membership ativa do chamador (nunca é autoridade por si)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/approvals": {
+      "get": {
+        "operationId": "listApprovals",
+        "x-status": "existing; extended (filtro state aditivo)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Reconciliado com a membership ativa do chamador (nunca é autoridade por si)."
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pending",
+                "approved",
+                "rejected",
+                "expired"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Approval"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/approvals/{id}/decide": {
+      "post": {
+        "operationId": "decideApproval",
+        "x-status": "existing",
+        "description": "tenant_admin ou atlas_*; tenant_user recebe 403. Fora do G2 (read-only), disponível para G4.",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Decision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Approval"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/usage": {
+      "get": {
+        "operationId": "listUsage",
+        "x-status": "existing",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Reconciliado com a membership ativa do chamador (nunca é autoridade por si)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UsageRecord"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/usage/summary": {
+      "get": {
+        "operationId": "getUsageSummary",
+        "x-status": "new",
+        "summary": "Agregados por métrica e período (painel)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Reconciliado com a membership ativa do chamador (nunca é autoridade por si)."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/public/catalog": {
+      "get": {
+        "operationId": "getCatalog",
+        "x-status": "existing (não documentado em openapi.json 0.1.0)",
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catálogo comercial (missões, produtos, preços active)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects": {
+      "get": {
+        "operationId": "listProjects",
+        "x-status": "new (migration 007 aditiva)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Reconciliado com a membership ativa do chamador."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Project"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{id}": {
+      "get": {
+        "operationId": "getProject",
+        "x-status": "new (migration 007 aditiva)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Reconciliado com a membership ativa do chamador."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/modules": {
+      "get": {
+        "operationId": "listModules",
+        "x-status": "new (sem tabela: packages/contracts/modules.json)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModuleDefinition"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/expert": {
+      "get": {
+        "operationId": "getExpert",
+        "x-status": "new",
+        "summary": "Estado do Atlas Expert do tenant (deployment, políticas, planos recentes)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Reconciliado com a membership ativa do chamador."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpertStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/expert/requests": {
+      "post": {
+        "operationId": "createExpertRequest",
+        "x-status": "new (G2: desligado; G3)",
+        "summary": "Envia uma necessidade ao Expert; cria um TaskRun no deployment do Expert do tenant",
+        "description": "tenant_admin ou superior. O Expert só produz rascunhos e propostas; tudo o que tem efeito externo passa por Approval.",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpertRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "Bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT (Supabase Auth, ES256/RS256 via JWKS)"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "statusCode",
+          "error"
+        ],
+        "properties": {
+          "statusCode": {
+            "type": "integer"
+          },
+          "error": {
+            "type": "string",
+            "description": "Mensagem curta; 5xx → dependency_or_server_error"
+          }
+        }
+      },
+      "PlatformRole": {
+        "type": "string",
+        "enum": [
+          "tenant_user",
+          "tenant_admin",
+          "atlas_operator",
+          "atlas_engineer",
+          "atlas_owner"
+        ]
+      },
+      "Module": {
+        "type": "string",
+        "enum": [
+          "workforce",
+          "ami",
+          "community",
+          "media"
+        ],
+        "description": "Módulos de produto; entitlement module.<nome> (convenção aceite 09/10). Lista fechada por versão de modules.json."
+      },
+      "MembershipSummary": {
+        "type": "object",
+        "required": [
+          "tenantId",
+          "role",
+          "name"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/PlatformRole"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "Me": {
+        "type": "object",
+        "required": [
+          "sub",
+          "memberships"
+        ],
+        "properties": {
+          "sub": {
+            "type": "string",
+            "description": "auth.users.id (claim sub)"
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Só se presente no JWT; o Core não guarda perfis."
+          },
+          "memberships": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/MembershipSummary"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "tenantStatus": {
+                      "type": "string"
+                    },
+                    "tenantKind": {
+                      "$ref": "#/components/schemas/TenantKind"
+                    },
+                    "sandbox": {
+                      "type": "boolean"
+                    },
+                    "modules": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Module"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "Entitlement": {
+        "type": "object",
+        "required": [
+          "key",
+          "source",
+          "status",
+          "validFrom"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "mission.<templateId> · product.<productId> · module.<module>"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "trial",
+              "order",
+              "subscription",
+              "grant"
+            ]
+          },
+          "quantity": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "validUntil": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "expired",
+              "revoked"
+            ]
+          }
+        }
+      },
+      "EntitlementsResponse": {
+        "type": "object",
+        "required": [
+          "tenantId",
+          "modules",
+          "items"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Module"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Entitlement"
+            }
+          }
+        }
+      },
+      "DeploymentState": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "sandbox",
+          "acceptance",
+          "pilot",
+          "active",
+          "paused",
+          "suspended",
+          "terminated"
+        ]
+      },
+      "Deployment": {
+        "type": "object",
+        "required": [
+          "id",
+          "tenantId",
+          "roleId",
+          "packReleaseId",
+          "state"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "roleId": {
+            "type": "string"
+          },
+          "packReleaseId": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/DeploymentState"
+          },
+          "config": {
+            "type": "object"
+          },
+          "limits": {
+            "type": "object"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RunState": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "pending",
+          "awaiting_approval",
+          "blocked",
+          "completed",
+          "cancelled",
+          "suspended",
+          "dead_letter"
+        ]
+      },
+      "Run": {
+        "type": "object",
+        "description": "input bruto nunca é devolvido",
+        "required": [
+          "id",
+          "tenantId",
+          "deploymentId",
+          "state",
+          "startedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "deploymentId": {
+            "type": "string"
+          },
+          "correlationId": {
+            "type": "string"
+          },
+          "state": {
+            "$ref": "#/components/schemas/RunState"
+          },
+          "result": {},
+          "attempts": {
+            "type": "integer"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finishedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "costEstimate": {
+            "type": "string",
+            "description": "Decimal serializado"
+          }
+        }
+      },
+      "RunPage": {
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Run"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "RunEvent": {
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "safePayload": {
+            "type": "object"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RunDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Run"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "events": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/RunEvent"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "Approval": {
+        "type": "object",
+        "required": [
+          "id",
+          "runId",
+          "requestedAction",
+          "state",
+          "expiresAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "runId": {
+            "type": "string"
+          },
+          "requestedAction": {
+            "type": "string",
+            "description": "reschedule · handoff · tool:<toolId>"
+          },
+          "safeContext": {
+            "type": "object"
+          },
+          "state": {
+            "type": "string"
+          },
+          "assigneeId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolvedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "Decision": {
+        "type": "object",
+        "required": [
+          "tenant",
+          "decision"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "tenant": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approved",
+              "rejected"
+            ]
+          }
+        }
+      },
+      "UsageRecord": {
+        "type": "object",
+        "required": [
+          "id",
+          "metric",
+          "quantity",
+          "unit",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "runId": {
+            "type": "string"
+          },
+          "metric": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "estimatedCost": {
+            "type": "string"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UsageSummary": {
+        "type": "object",
+        "required": [
+          "from",
+          "to",
+          "metrics",
+          "runs"
+        ],
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "metrics": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "metric",
+                "unit",
+                "quantity"
+              ],
+              "properties": {
+                "metric": {
+                  "type": "string"
+                },
+                "unit": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "integer"
+                },
+                "estimatedCost": {
+                  "type": "string"
+                },
+                "currency": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "runs": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "contagem por RunState"
+          }
+        }
+      },
+      "TenantKind": {
+        "type": "string",
+        "enum": [
+          "customer",
+          "internal_pilot",
+          "platform"
+        ],
+        "description": "internal_pilot = venture própria tratada como cliente-piloto (ADR-0003); nunca apresentada como cliente externo."
+      },
+      "Project": {
+        "type": "object",
+        "required": [
+          "id",
+          "tenantId",
+          "slug",
+          "name",
+          "status",
+          "modules"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "planning",
+              "sandbox",
+              "active",
+              "paused",
+              "archived"
+            ]
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Module"
+            }
+          },
+          "supervisor": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "userId": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              }
+            }
+          },
+          "deploymentIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ProjectDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Project"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "deployments": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Deployment"
+                }
+              },
+              "pendingApprovals": {
+                "type": "integer"
+              },
+              "runs": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ModuleDefinition": {
+        "type": "object",
+        "required": [
+          "id",
+          "roles",
+          "toolPrefixes"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Module"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "toolPrefixes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "grantedBy": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Chaves de entitlement que concedem o módulo (module.x, product.y, mission.z)"
+          }
+        }
+      },
+      "ExpertStatus": {
+        "type": "object",
+        "required": [
+          "tenantId",
+          "enabled"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "deploymentId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeploymentState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "supervisor": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "userId": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              }
+            }
+          },
+          "policies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "tool",
+                "policy"
+              ],
+              "properties": {
+                "tool": {
+                  "type": "string"
+                },
+                "policy": {
+                  "type": "string",
+                  "enum": [
+                    "auto",
+                    "approval",
+                    "forbidden"
+                  ]
+                }
+              }
+            }
+          },
+          "recentPlans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Run"
+            }
+          }
+        }
+      },
+      "ExpertRequest": {
+        "type": "object",
+        "required": [
+          "tenant",
+          "message"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "tenant": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        }
+      }
+    }
+  }
+}

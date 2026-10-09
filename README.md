@@ -23,6 +23,7 @@
 6. [Playbook de implantação VPS](docs/DEPLOYMENT-VPS-PLAYBOOK.md)
 7. [Missão Claude Code — Sprint 0/1](docs/CLAUDE-CODE-MISSION.md)
 8. [Frontends ligados a esta API — o que falta tratar no backend](docs/FRONTENDS.md)
+9. [WORKSPACES-BE-001 — contrato Core ↔ Workspaces, auth, entitlements, AMI (proposta)](docs/workspaces/README.md)
 
 ## Ecossistema
 | Repositório | Função |
