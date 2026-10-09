@@ -374,6 +374,8 @@ export interface components {
             role: "tenant_user" | "tenant_admin" | "atlas_operator" | "atlas_engineer" | "atlas_owner";
             /** @description Tenant display name, read inside that tenant's RLS context; falls back to tenantId */
             name: string;
+            /** @description Tenant.status (active, suspended, …). Non-active tenants are listed so the switcher can show them as unavailable; the Core refuses to execute work for them. */
+            tenantStatus: string;
         };
     };
     responses: never;
