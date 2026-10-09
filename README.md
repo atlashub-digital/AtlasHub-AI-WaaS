@@ -22,12 +22,14 @@
 5. [Catálogo MVP de 8 colaboradores](docs/MVP-8-DIGITAL-EMPLOYEES.md)
 6. [Playbook de implantação VPS](docs/DEPLOYMENT-VPS-PLAYBOOK.md)
 7. [Missão Claude Code — Sprint 0/1](docs/CLAUDE-CODE-MISSION.md)
+8. [Frontends ligados a esta API — o que falta tratar no backend](docs/FRONTENDS.md)
 
 ## Ecossistema
 | Repositório | Função |
 |---|---|
 | [atlas-agent-packs](https://github.com/atlashub-digital/atlas-agent-packs) | Packs reutilizáveis versionados; definição técnica de competências |
 | [App.AtlasHub.Si](https://github.com/atlashub-digital/App.AtlasHub.Si) | Clara, catálogo, simulador e futuro portal do cliente |
+| [AtlasHub.Si](https://github.com/atlashub-digital/AtlasHub.Si) | Site institucional e Clara de pré-análise (leads) |
 | **AtlasHub-AI-WaaS** | Fonte principal de verdade comercial e operacional, subscrições e deployments |
 | **AI-WaaS Operations** | Coordenação e supervisão operacional no próprio projeto; sem dependência de PaperClip |
 
