@@ -30,7 +30,7 @@ Sem a flag, o comportamento é o anterior (compatível com staging). A CI corre 
 Diferença face ao plano em `docs/workspaces/03`: **não** há exceção para o house tenant nem para deployments `sandbox`. Os guardrails só se apertam; os tenants sintéticos recebem `module.workforce` por seed.
 
 ## Concessão
-Só `atlas_owner`/`atlas_operator` com membership no tenant. Tenant admins não se concedem módulos. Fonte `grant`, `sourceId = ops`, auditado (`entitlement.grant` / `entitlement.revoke`).
+Só `atlas_owner`/`atlas_operator` com membership no tenant. Tenant admins não se concedem módulos. Fonte `grant`, `sourceId = ops`, auditado (`entitlement.grant` / `entitlement.revoke`). A revogação atinge só a linha `sourceId = ops`; outras concessões (seeds, encomendas, subscrições, trials) mantêm-se.
 
 ## Tenants sintéticos do piloto (`scripts/seed-pilots.mjs`, só `waas_staging`)
 `pilot-a-sandbox`, `pilot-b-sandbox`, `pilot-c-sandbox`, `atlas-synthetic-qa`, com nomes genéricos e utilizadores `<tenant>:admin`/`<tenant>:viewer`. O mapeamento para organizações reais vive no repositório privado de operações.

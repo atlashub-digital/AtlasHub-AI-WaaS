@@ -41,7 +41,14 @@ test('only Atlas operators of the tenant grant or revoke a module, and it is aud
  const g=await api('/v1/ops/entitlements','operator-A','POST',{tenant:'tenant-A',module:'ami'});assert.equal(g.status,201);assert.equal(g.body.key,'module.ami');assert.equal(g.body.source,'grant');
  assert.ok((await api('/v1/entitlements?tenant=tenant-A')).body.modules.includes('ami'));
  assert.ok(await db.auditEvent.count({where:{tenantId:'tenant-A',action:'entitlement.grant',objectId:g.body.id}}));
- const r=await api('/v1/ops/entitlements/revoke','operator-A','POST',{tenant:'tenant-A',module:'ami'});assert.equal(r.status,201);assert.equal(r.body.revoked,1);
+ // An independent grant of the same module (e.g. a seed or another provisioning source) must survive the revocation.
+ const other=await db.commerceEntitlement.create({data:{id:randomUUID(),tenantId:'tenant-A',key:'module.ami',source:'grant',sourceId:'seed-independent'}});
+ try{
+  const r=await api('/v1/ops/entitlements/revoke','operator-A','POST',{tenant:'tenant-A',module:'ami'});assert.equal(r.status,201);assert.equal(r.body.revoked,1);
+  assert.equal((await db.commerceEntitlement.findUnique({where:{id:other.id}})).status,'active','independent grant untouched');
+  assert.equal((await db.commerceEntitlement.findUnique({where:{id:g.body.id}})).status,'revoked');
+  assert.ok((await api('/v1/entitlements?tenant=tenant-A')).body.modules.includes('ami'),'module stays on through the independent grant');
+ }finally{await db.commerceEntitlement.delete({where:{id:other.id}});}
  assert.ok(!(await api('/v1/entitlements?tenant=tenant-A')).body.modules.includes('ami'));
 });
 test('API refuses new deployments without an entitlement for the role',async()=>{
