@@ -5,6 +5,9 @@ const issuer=process.env.JWT_ISSUER;
 const audience=process.env.JWT_AUDIENCE;
 if(!issuer||!audience) throw new Error('JWT_ISSUER and JWT_AUDIENCE required');
 if(process.env.AUTH_MODE==='staging'&&process.env.NODE_ENV==='production') throw new Error('Staging authentication forbidden in production');
+// Anything reachable through the public HTTPS edge must verify real Supabase tokens (JWKS), never the shared HS256 secret.
+if(process.env.AUTH_MODE==='staging'&&process.env.PUBLIC_INGRESS==='1') throw new Error('Staging authentication forbidden behind the public ingress');
+if(process.env.PUBLIC_INGRESS==='1'&&!process.env.JWT_JWKS_URL) throw new Error('JWT_JWKS_URL required behind the public ingress');
 const jwks=process.env.JWT_JWKS_URL?createRemoteJWKSet(new URL(process.env.JWT_JWKS_URL)):undefined;
 export async function subject(req:any){
  let sub:string;

@@ -1,0 +1,61 @@
+# AtlasHub Core — staging HTTPS ingress (proposal; NOT applied). Imported as an isolated site block into the shared
+# edge Caddyfile: `import /etc/caddy/sites/core-staging.caddy`. Hostname and upstream come from the environment so
+# this public repository carries no infrastructure details:
+#   CORE_STAGING_HOST   public hostname (DNS → the VPS)
+#   CORE_UPSTREAM       loopback port of the staging API container (compose maps 127.0.0.1:<port>:4000)
+#
+# Surface: allowlist. Only what the Workspaces BFF needs is reachable; everything else is 404 at the edge.
+# Admin (/v1/ops/*, POST /v1/tenants*, /v1/deployments*), inbound webhooks and commerce stay loopback-only
+# (operators use an SSH tunnel). Authorisation is still the Core's: JWT (Supabase JWKS) + membership + RLS.
+{$CORE_STAGING_HOST} {
+	encode zstd gzip
+
+	request_body {
+		max_size 64KB
+	}
+
+	@read {
+		method GET
+		path /health /v1/me /v1/me/memberships /v1/entitlements /v1/roles /v1/runs /v1/runs/* /v1/approvals /v1/usage
+	}
+	@decide {
+		method POST
+		path_regexp ^/v1/approvals/[A-Za-z0-9_-]+/decide$
+	}
+	@readDeployments {
+		method GET
+		path_regexp ^/v1/tenants/[A-Za-z0-9_-]+/deployments$
+	}
+
+	handle @decide {
+		reverse_proxy {$CORE_UPSTREAM} {
+			header_up -X-Atlas-Signature
+		}
+	}
+	handle @readDeployments {
+		reverse_proxy {$CORE_UPSTREAM}
+	}
+	handle @read {
+		reverse_proxy {$CORE_UPSTREAM}
+	}
+	handle {
+		respond 404
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		X-Frame-Options DENY
+		-Server
+		-X-Powered-By
+	}
+
+	log {
+		output file /var/log/caddy/core-staging.log {
+			roll_size 20MiB
+			roll_keep 5
+		}
+		format json
+	}
+}
