@@ -16,13 +16,13 @@ CREATE TABLE "Project" (
 );
 ALTER TABLE "Project" ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON "Project" FROM PUBLIC;
-DO $ DECLARE role_name text; BEGIN
+DO $$ DECLARE role_name text; BEGIN
  FOREACH role_name IN ARRAY ARRAY['anon','authenticated'] LOOP
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname=role_name) THEN
    EXECUTE format('REVOKE ALL ON "Project" FROM %I',role_name);
   END IF;
  END LOOP;
-END $;
+END $$;
 GRANT SELECT, INSERT, UPDATE, DELETE ON "Project" TO waas_runtime;
 CREATE POLICY tenant_isolation ON "Project" FOR ALL TO waas_runtime
  USING ("tenantId" = waas_tenant()) WITH CHECK ("tenantId" = waas_tenant());
