@@ -13,6 +13,7 @@
 | R9 | **Dois catálogos de pacotes desalinhados**: o App usa packs 0.3.0, a branch tem 0.3.1 e o Core tem `PackRelease` próprio | Média | PR #2 packs; `catalog.json` do App | O Workspaces lê só o Core; sincronizar o App depois do merge do PR #2 | MGJ · Claude |
 | R10 | **Verificação local em Postgres 16** (CI em 17.6); readiness/backup não corridos aqui | Baixa | 01 §1–2 | A CI dos PRs #7 e deste PR corre tudo em 17.6 | Codex (QA) |
 | R11 | **Repositório Workspaces vazio**: risco de o FE avançar sem contrato | Média | `main` = só README | Este contrato é a entrada; o FE gera tipos do rascunho | MGJ |
+| R12 | **CI intermitente**: o mesmo commit (`6f19fb9`) falhou no run de `push` e passou no de `pull_request`; o *re-run* passou (attempt 2) | Média | Run 37968811186 (attempt 1 ✗, attempt 2 ✓) e run 37968860376 ✓. Os logs não são acessíveis desta sessão | O revisor confirma pelo log da tentativa 1. Candidato conhecido: o teste de FK cross-tenant depende da ordem (`ROUND-2-STATUS` checkpoint 2). Corrigir a pré-condição num PR de testes | Codex (QA) · Claude |
 
 ## Decisões pedidas ao Founder
 
