@@ -1,5 +1,7 @@
 # 05 — Plano de integração do AMI no Core
 
+> **Decisão (Founder, 09/10):** o AMI é um **módulo de produto** (`module.ami`) composto por Roles/Packs reutilizáveis, e não exclusivamente um Role. Esta versão já o reflete.
+
 **Contexto (decisões em vigor, atlas-ops):**
 - O AMI é um **módulo** do Workspaces, com coletores especializados. Não tem control plane nem portal próprio, e `ami.atlashub.si` é apenas uma porta contextual (deep link).
 - A missão `AMI-001` (Max) adapta o coletor (`fbl.py`) para a saída normalizada **`ami.ads.v1`**, com custo observável e um teto de **3 USD/mês** (ATL-D17).
@@ -14,7 +16,7 @@ Reutilizar o motor que já existe e está testado (deployments → runs → tool
 | Conceito AMI | Peça existente no Core | Alteração |
 |---|---|---|
 | "Ligar o AMI" a um tenant | `commerce_entitlement` `module.ami` (fonte `grant` ou `subscription`) | Nenhuma no schema (convenção de chave, [03 §4](03-AUTH-ENTITLEMENTS.md)) |
-| Coletor AMI | **Role/Pack no catálogo único** (ex.: `ROLE-009` / `PACK-009 ami-collector` no `atlas-agent-packs`) | Novo pack. **Não** é um segundo catálogo: é uma linha no mesmo `Role`/`PackRelease` |
+| Coletor AMI | **Módulo de produto composto por vários Roles/Packs reutilizáveis** no catálogo único (`ami.market-intelligence`, `commerce.offer-research`, `growth.analytics`; ver [08 §4](08-PLANO-CLIENTES-PROJETOS-EXPERT.md)) | Novos packs. **Não** é um segundo catálogo: são linhas no mesmo `Role`/`PackRelease`. O módulo está declarado em `modules.json` |
 | Instância por cliente | `Deployment` (`sandbox` até à homologação) com `limits` (`monthlyBudgetUsd`, `dailyRuns`) | Nenhuma (são JSON) |
 | Pedido de recolha | `TaskRun` via `POST /v1/inbound/{provider}` (assinado) ou disparo de operador | Idem |
 | Execução | Tool `ami.collect` no gateway, política **`approval`** (há custo): cria `Approval` com resumo e custo estimado; depois da aprovação, chama o n8n como o `research.collect` da ROLE-006 (`callN8nTool`, HMAC + `Idempotency-Key`) | Novo módulo de role em `packages/roles` (padrão r006) |

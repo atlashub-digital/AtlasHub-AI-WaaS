@@ -78,7 +78,7 @@ Rotas não documentadas: `GET /v1/me/memberships` (só na branch), `GET /v1/publ
 | AtlasHub-AI-WaaS | PR #6 (`feat/round-1-staging`) | fechado; head `71f8b74` já é antecessor de `main` | nada |
 | atlas-agent-packs | `feat/catalog-tools` (`460521b`, 0.3.1) | 0 commits atrás de `main`; `validate` 8/8, `test` 10/10, `build` ok; 8 blocos `tools` (35 `auto`, 8 `approval`) | **PR #2 (draft)** |
 | atlas-agent-packs | PR #1 | já em `main` | nada |
-| AtlasHub-Workspaces | `main` (`cc88320`) | **só README** (commit inicial) | o contrato é a primeira entrada do MGJ |
+| AtlasHub-Workspaces | `main` (`cc88320`) | **só README** (commit inicial) | shell iniciado por Claude em `feat/workspaces-shell` |
 
 ## 6. Inventário funcional do Core (existente)
 

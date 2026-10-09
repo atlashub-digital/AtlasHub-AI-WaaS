@@ -11,8 +11,8 @@
 
 **Plano para o Workspaces:**
 - O utilizador autentica-se no **Supabase Auth** (o mesmo projeto do Core) a partir do Workspaces, e o Workspaces envia o access token ao Core.
-- **Recomendação ao MGJ:** um BFF no servidor Next (route handlers/server actions), com o token em cookie `HttpOnly; Secure; SameSite=Strict` e refresh do lado do servidor. Evita CORS e mantém o token fora do JavaScript do browser.
-- Se o MGJ preferir chamadas diretas do browser, o Core precisa de CORS com allowlist explícita (PR à parte).
+- **Decidido (Claude, FE+BE):** um BFF no servidor Next (route handlers/server actions), com o token em cookie `HttpOnly; Secure; SameSite=Strict` e refresh do lado do servidor. Evita CORS e mantém o token fora do JavaScript do browser.
+- Chamadas diretas do browser ao Core não são usadas; se um dia forem precisas, exigem CORS com allowlist explícita (PR à parte).
 - O Workspaces **não** cria utilizadores, **não** decide papéis e **não** guarda tokens em `localStorage`.
 
 ## 2. Memberships e papéis

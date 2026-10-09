@@ -1,5 +1,7 @@
 # 07 — PRs pequenos propostos e testes de aceitação
 
+> A sequência atualizada (com Workspaces, Expert, projetos e migration 007) está em [08 §8](08-PLANO-CLIENTES-PROJETOS-EXPERT.md). Os critérios de aceitação abaixo mantêm-se.
+
 Regras comuns: um PR por assunto; sem migrations destrutivas; `openapi.json` sobe a versão minor em cada alteração aditiva e `api-types.ts` é regenerado; testes negativos A/B obrigatórios em tudo o que lê dados de tenant; revisão pelo WORKSPACES-QA-001 (Codex oficial) antes do merge; **nenhum merge antes de G0**.
 
 | PR | Repo | Conteúdo | Depende | Estado |

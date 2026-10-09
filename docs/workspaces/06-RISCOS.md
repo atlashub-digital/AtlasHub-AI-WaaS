@@ -10,14 +10,17 @@
 | R6 | **Auth staging HS256** em ambientes de teste partilhados | Média | `auth.ts` | Já bloqueado em `NODE_ENV=production`. Usar `AUTH_MODE=supabase` em qualquer ambiente acessível ao FE | Claude |
 | R7 | **Clientes sem utilizadores**: tenant criado em trial ou quote sem membership | Média | `commerce.ts` (`approveTrial`, `quotes/accept`) | Convites (03 §5), depois do G2 | Claude |
 | R8 | **Aprovações expiradas ficam `pending`** (não há limpeza) | Baixa | `API.md` + código | FE marca expirada por `expiresAt`; job de limpeza depois | Claude |
-| R9 | **Dois catálogos de pacotes desalinhados**: o App usa packs 0.3.0, a branch tem 0.3.1 e o Core tem `PackRelease` próprio | Média | PR #2 packs; `catalog.json` do App | O Workspaces lê só o Core; sincronizar o App depois do merge do PR #2 | MGJ · Claude |
+| R9 | **Dois catálogos de pacotes desalinhados**: o App usa packs 0.3.0, a branch tem 0.3.1 e o Core tem `PackRelease` próprio | Média | PR #2 packs; `catalog.json` do App | O Workspaces lê só o Core; sincronizar o App depois do merge do PR #2 | Claude |
 | R10 | **Verificação local em Postgres 16** (CI em 17.6); readiness/backup não corridos aqui | Baixa | 01 §1–2 | A CI dos PRs #7 e deste PR corre tudo em 17.6 | Codex (QA) |
-| R11 | **Repositório Workspaces vazio**: risco de o FE avançar sem contrato | Média | `main` = só README | Este contrato é a entrada; o FE gera tipos do rascunho | MGJ |
+| R11 | **Repositório Workspaces vazio** | Média | `main` = só README | Shell iniciado em `feat/workspaces-shell` sobre este contrato | Claude |
 | R12 | **CI intermitente**: o mesmo commit (`6f19fb9`) falhou no run de `push` e passou no de `pull_request`; o *re-run* passou (attempt 2) | Média | Run 37968811186 (attempt 1 ✗, attempt 2 ✓) e run 37968860376 ✓. Os logs não são acessíveis desta sessão | O revisor confirma pelo log da tentativa 1. Candidato conhecido: o teste de FK cross-tenant depende da ordem (`ROUND-2-STATUS` checkpoint 2). Corrigir a pré-condição num PR de testes | Codex (QA) · Claude |
+| R13 | **Pilotos internos apresentados como clientes externos** (ADR-0003/ATL-D10) | Alta (reputacional) | Repositórios públicos | Nomes reais só no `atlas-ops`; `Tenant.kind = internal_pilot` bloqueia o uso em material comercial; designações genéricas em código e fixtures | Claude |
 
 ## Decisões pedidas ao Founder
 
 1. **Ratificar G0**: fronteiras, owners e visibilidade (F23). Sem isso, os PRs ficam em draft e nada é integrado.
 2. **Ingress do Core** para o ambiente que o Workspaces vai usar (R4).
-3. **Aprovar a convenção `module.<nome>`** para entitlements e a concessão manual por operador (`grant`).
-4. **AMI como Role/Pack no catálogo único** (05 §2), em vez de um serviço próprio.
+3. ~~Aprovar a convenção `module.<nome>`~~ — **aceite** (09/10).
+4. ~~AMI como Role/Pack~~ — **decidido**: módulo de produto composto por Roles/Packs (08 §4).
+5. **Migration 007 aditiva** (`project`, `Tenant.kind/sandbox`, `projectId`): aprovação classe D antes de sair do staging local (08 §1).
+6. **Hostname do Core** e allowlist de caminhos (08 §6).

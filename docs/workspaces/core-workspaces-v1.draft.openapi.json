@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AtlasHub Platform Core — superfície Workspaces (RASCUNHO)",
-    "version": "1.0.0-draft.1",
-    "description": "Proposta WORKSPACES-BE-001. Não é contrato publicado: o contrato publicado continua a ser packages/contracts/openapi.json. Cada operação tem x-status: existing | extended | new."
+    "version": "1.0.0-draft.2",
+    "description": "Proposta WORKSPACES-BE-001. Não é contrato publicado: o contrato publicado continua a ser packages/contracts/openapi.json. Cada operação tem x-status: existing | extended | new. Draft 2 (09/10): hierarquia organização→projetos, módulos (module.<nome>), Atlas Expert por tenant; liderança FE+BE Claude."
   },
   "servers": [
     {
@@ -809,6 +809,351 @@
           }
         }
       }
+    },
+    "/v1/projects": {
+      "get": {
+        "operationId": "listProjects",
+        "x-status": "new (migration 007 aditiva)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Reconciliado com a membership ativa do chamador."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Project"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/projects/{id}": {
+      "get": {
+        "operationId": "getProject",
+        "x-status": "new (migration 007 aditiva)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Reconciliado com a membership ativa do chamador."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/modules": {
+      "get": {
+        "operationId": "listModules",
+        "x-status": "new (sem tabela: packages/contracts/modules.json)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ModuleDefinition"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/expert": {
+      "get": {
+        "operationId": "getExpert",
+        "x-status": "new",
+        "summary": "Estado do Atlas Expert do tenant (deployment, políticas, planos recentes)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Reconciliado com a membership ativa do chamador."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpertStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/expert/requests": {
+      "post": {
+        "operationId": "createExpertRequest",
+        "x-status": "new (G2: desligado; G3)",
+        "summary": "Envia uma necessidade ao Expert; cria um TaskRun no deployment do Expert do tenant",
+        "description": "tenant_admin ou superior. O Expert só produz rascunhos e propostas; tudo o que tem efeito externo passa por Approval.",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpertRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Run"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Erro",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -850,9 +1195,11 @@
         "type": "string",
         "enum": [
           "workforce",
-          "ami"
+          "ami",
+          "community",
+          "media"
         ],
-        "description": "Módulos do Workspaces; derivados dos entitlements (ver 03-AUTH-ENTITLEMENTS.md)."
+        "description": "Módulos de produto; entitlement module.<nome> (convenção aceite 09/10). Lista fechada por versão de modules.json."
       },
       "MembershipSummary": {
         "type": "object",
@@ -903,6 +1250,12 @@
                   "properties": {
                     "tenantStatus": {
                       "type": "string"
+                    },
+                    "tenantKind": {
+                      "$ref": "#/components/schemas/TenantKind"
+                    },
+                    "sandbox": {
+                      "type": "boolean"
                     },
                     "modules": {
                       "type": "array",
@@ -1322,6 +1675,229 @@
               "type": "integer"
             },
             "description": "contagem por RunState"
+          }
+        }
+      },
+      "TenantKind": {
+        "type": "string",
+        "enum": [
+          "customer",
+          "internal_pilot",
+          "platform"
+        ],
+        "description": "internal_pilot = venture própria tratada como cliente-piloto (ADR-0003); nunca apresentada como cliente externo."
+      },
+      "Project": {
+        "type": "object",
+        "required": [
+          "id",
+          "tenantId",
+          "slug",
+          "name",
+          "status",
+          "modules"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "tenantId": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "planning",
+              "sandbox",
+              "active",
+              "paused",
+              "archived"
+            ]
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Module"
+            }
+          },
+          "supervisor": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "userId": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              }
+            }
+          },
+          "deploymentIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ProjectDetail": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Project"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "deployments": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Deployment"
+                }
+              },
+              "pendingApprovals": {
+                "type": "integer"
+              },
+              "runs": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ModuleDefinition": {
+        "type": "object",
+        "required": [
+          "id",
+          "roles",
+          "toolPrefixes"
+        ],
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Module"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "toolPrefixes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "grantedBy": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Chaves de entitlement que concedem o módulo (module.x, product.y, mission.z)"
+          }
+        }
+      },
+      "ExpertStatus": {
+        "type": "object",
+        "required": [
+          "tenantId",
+          "enabled"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "deploymentId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DeploymentState"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "supervisor": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "userId": {
+                "type": "string"
+              },
+              "displayName": {
+                "type": "string"
+              }
+            }
+          },
+          "policies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "tool",
+                "policy"
+              ],
+              "properties": {
+                "tool": {
+                  "type": "string"
+                },
+                "policy": {
+                  "type": "string",
+                  "enum": [
+                    "auto",
+                    "approval",
+                    "forbidden"
+                  ]
+                }
+              }
+            }
+          },
+          "recentPlans": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Run"
+            }
+          }
+        }
+      },
+      "ExpertRequest": {
+        "type": "object",
+        "required": [
+          "tenant",
+          "message"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "tenant": {
+            "type": "string"
+          },
+          "projectId": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 2000
           }
         }
       }

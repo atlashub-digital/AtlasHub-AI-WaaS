@@ -1,7 +1,7 @@
-# 04 — Contrato Workspaces ↔ Core (para acordo com MGJ)
+# 04 — Contrato Workspaces ↔ Core
 
-**Fonte de verdade técnica:** [`core-workspaces-v1.draft.openapi.json`](core-workspaces-v1.draft.openapi.json), em OpenAPI 3.1 com `x-status` por operação. É válido para geração de tipos (o `openapi-typescript` 7.9.1 gera 898 linhas sem erros).
-**O contrato passa por GitHub, não por mensagens.** Alterações por PR neste diretório, com revisão do WORKSPACES-QA-001.
+**Fonte de verdade técnica:** [`core-workspaces-v1.draft.openapi.json`](core-workspaces-v1.draft.openapi.json), em OpenAPI 3.1 com `x-status` por operação. É válido para geração de tipos (o `openapi-typescript` 7.9.1 gera 1307 linhas sem erros (draft 2)).
+**O contrato passa por GitHub, não por mensagens.** Alterações por PR neste diretório, com revisão do WORKSPACES-QA-001. O frontend (`AtlasHub-Workspaces`) e o backend são agora do mesmo responsável (Claude); o contrato continua a ser a fronteira.
 
 ## 1. Princípios acordáveis
 
@@ -30,7 +30,9 @@ sequenceDiagram
   end
   W->>C: GET /v1/entitlements?tenant=T
   C-->>W: modules ["workforce","ami"?], items[...]
+  W->>C: GET /v1/projects?tenant=T (organização → projetos)
   W->>C: GET /v1/tenants/T/deployments + GET /v1/public/catalog?locale=pt-BR
+  W->>C: GET /v1/expert?tenant=T (Atlas Expert do tenant)
   W->>C: GET /v1/runs?tenant=T&limit=50 · GET /v1/approvals?tenant=T&state=pending · GET /v1/usage/summary?tenant=T&from&to
 ```
 
@@ -70,10 +72,11 @@ O formato é único, vindo do filtro global: `{ "statusCode": 403, "error": "Sel
 | 429 | Limite de mutações (120 POST/min por origem) |
 | 503 | Dependência indisponível (`/ready` falha) |
 
-## 5. Pontos a fechar com MGJ (sem implementação até ao acordo)
+## 5. Decisões de implementação (Claude, FE + BE)
 
-- [ ] BFF no servidor Next (recomendado) vs chamadas do browser (exige CORS no Core).
+- [x] **BFF no servidor Next**: o token fica em cookie HttpOnly e o Core não precisa de CORS.
 - [ ] Locale por defeito do Workspaces (`pt-BR` no Core) e decisão PT-PT/PT-BR.
 - [ ] O que mostrar para tenants com `tenantStatus ≠ active`.
 - [ ] Paginação: `limit` máximo de 100 e cursor opaco são suficientes para a primeira versão?
-- [ ] Tipos gerados: o FE gera do rascunho agora e regenera do `openapi.json` publicado quando os PRs D/E entrarem.
+- [x] Tipos: o Workspaces usa tipos alinhados com o rascunho e passa a gerá-los do `openapi.json` publicado quando os PRs D/E entrarem.
+- [x] Hierarquia **organização → projetos** (ver [08](08-PLANO-CLIENTES-PROJETOS-EXPERT.md)); `GET /v1/projects*` chega com a migration 007.
