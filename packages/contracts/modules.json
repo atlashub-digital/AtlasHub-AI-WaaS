@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "description": "Módulos de produto (convenção module.<nome>, aceite a 09/10/2026). Contrato versionado sem tabela: o entitlement module.<nome> liga o módulo; roles e prefixos de tools dizem o que ele cobre.",
+  "modules": {
+    "workforce": { "label": "Workforce", "roles": ["ROLE-001", "ROLE-002", "ROLE-003", "ROLE-004", "ROLE-005", "ROLE-006", "ROLE-007", "ROLE-008"], "toolPrefixes": [] },
+    "ami": { "label": "AMI", "roles": [], "toolPrefixes": ["ami."] },
+    "community": { "label": "Comunidade", "roles": [], "toolPrefixes": ["community."] },
+    "media": { "label": "Media", "roles": [], "toolPrefixes": ["media."] }
+  }
+}

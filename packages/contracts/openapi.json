@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AtlasHub AI Workforce staging API",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "servers": [
     {
@@ -199,6 +199,190 @@
             "description": "Tenant.status (active, suspended, …). Non-active tenants are listed so the switcher can show them as unavailable; the Core refuses to execute work for them."
           }
         }
+      },
+      "ModuleKey": {
+        "type": "string",
+        "enum": [
+          "workforce",
+          "ami",
+          "community",
+          "media"
+        ],
+        "description": "Product module (entitlement key module.<module>); closed list per packages/contracts/modules.json version."
+      },
+      "MeMembership": {
+        "type": "object",
+        "required": [
+          "tenantId",
+          "role",
+          "name",
+          "tenantStatus",
+          "modules"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "tenant_user",
+              "tenant_admin",
+              "atlas_operator",
+              "atlas_engineer",
+              "atlas_owner"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "tenantStatus": {
+            "type": "string"
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModuleKey"
+            }
+          }
+        }
+      },
+      "Me": {
+        "type": "object",
+        "required": [
+          "sub",
+          "memberships"
+        ],
+        "properties": {
+          "sub": {
+            "type": "string"
+          },
+          "memberships": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MeMembership"
+            }
+          }
+        }
+      },
+      "EntitlementItem": {
+        "type": "object",
+        "required": [
+          "key",
+          "source",
+          "validFrom",
+          "status",
+          "active"
+        ],
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "mission.<templateId> · product.<productId> · module.<module>"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "order",
+              "subscription",
+              "trial",
+              "grant"
+            ]
+          },
+          "quantity": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "validFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "validUntil": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "expired",
+              "revoked"
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Entitlements": {
+        "type": "object",
+        "required": [
+          "tenantId",
+          "enforced",
+          "modules",
+          "items"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "enforced": {
+            "type": "boolean",
+            "description": "ENTITLEMENTS_ENFORCE=1 on this deployment"
+          },
+          "modules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModuleKey"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EntitlementItem"
+            }
+          }
+        }
+      },
+      "ModuleGrant": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tenant",
+          "module"
+        ],
+        "properties": {
+          "tenant": {
+            "type": "string"
+          },
+          "module": {
+            "$ref": "#/components/schemas/ModuleKey"
+          },
+          "validUntil": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ModuleRevoke": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tenant",
+          "module"
+        ],
+        "properties": {
+          "tenant": {
+            "type": "string"
+          },
+          "module": {
+            "$ref": "#/components/schemas/ModuleKey"
+          }
+        }
       }
     }
   },
@@ -316,6 +500,79 @@
           },
           "503": {
             "description": "Dependency unavailable"
+          }
+        }
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "operationId": "get__v1_me",
+        "summary": "Caller identity, memberships and active modules per tenant",
+        "description": "Each tenant is read inside its own RLS context. No memberships → 200 with an empty list.",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        }
+      }
+    },
+    "/v1/entitlements": {
+      "get": {
+        "operationId": "get__v1_entitlements",
+        "summary": "Entitlements and derived modules of one tenant",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Required when the caller has more than one membership"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Entitlements"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          },
+          "403": {
+            "description": "No membership in the tenant"
           }
         }
       }
@@ -540,7 +797,7 @@
             "description": "Missing or invalid verified identity"
           },
           "403": {
-            "description": "Policy or role denied"
+            "description": "Policy or role denied; entitlement_required when ENTITLEMENTS_ENFORCE=1 and no active entitlement covers roleId"
           },
           "404": {
             "description": "Scoped resource absent"
@@ -1108,6 +1365,82 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/v1/ops/entitlements": {
+      "post": {
+        "operationId": "post__v1_ops_entitlements",
+        "summary": "Grant a product module to a tenant (atlas_owner/atlas_operator, audited)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModuleGrant"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Granted (source grant)"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          },
+          "403": {
+            "description": "Not an Atlas operator of the tenant"
+          }
+        }
+      }
+    },
+    "/v1/ops/entitlements/revoke": {
+      "post": {
+        "operationId": "post__v1_ops_entitlements_revoke",
+        "summary": "Revoke an operator-granted module (audited)",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModuleRevoke"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Revoked count"
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          },
+          "403": {
+            "description": "Not an Atlas operator of the tenant"
           }
         }
       }

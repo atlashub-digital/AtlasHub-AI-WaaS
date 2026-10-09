@@ -3,6 +3,8 @@ import { Prisma,PrismaClient } from '@prisma/client';
 import { classify,toolInputs } from '../../../packages/contracts/policy.js';
 import { scoped,setContext } from '../../../packages/db/context.js';
 import { runRole,RolePolicyError } from './engine.js';
+import { allowsRole,enforcing } from '../../../packages/contracts/entitlements.js';
+import { loadEntitlements } from '../../../packages/db/entitlements.js';
 export const db=new PrismaClient({adapter:new PrismaPg({connectionString:process.env.DATABASE_URL})});
 // Worker resolves the run's tenant under the narrow 'worker' scope, then binds the transaction to that tenant.
 export async function runTenant(runId:string){return (await scoped(db,{scope:'worker'},tx=>tx.taskRun.findUnique({where:{id:runId},select:{tenantId:true}})))?.tenantId;}
@@ -21,11 +23,14 @@ export async function execute(runId:string){
  const run=await tx.taskRun.findUniqueOrThrow({where:{id:runId}});if(['completed','blocked','cancelled','suspended','dead_letter'].includes(run.state))return;
  const deployment=await tx.deployment.findFirst({where:{id:run.deploymentId,tenantId:run.tenantId}});const tenant=await tx.tenant.findUnique({where:{id:run.tenantId}});
  if(!deployment||tenant?.status!=='active'||!['sandbox','pilot','active'].includes(deployment.state)){await tx.taskRun.update({where:{id:run.id},data:{state:'suspended'}});await event(tx,run,'policy.paused');return;}
+ // Entitlements are checked again at execution: they may have expired or been revoked since the run was queued.
+ const ent=enforcing()?await loadEntitlements(tx,run.tenantId):undefined;
+ if(ent&&!allowsRole(ent.keys,deployment.roleId,ent.roleByKey)){await tx.taskRun.update({where:{id:run.id},data:{state:'blocked',result:{reason:'entitlement_expired'}}});await event(tx,run,'policy.denied',{reason:'entitlement_expired'});return;}
  const limits=deployment.limits as {dailyRuns:number;alertAt:number};const today=new Date();today.setUTCHours(0,0,0,0);
  const used=await tx.usageRecord.count({where:{tenantId:run.tenantId,createdAt:{gte:today}}});
  if(used>=limits.dailyRuns){await tx.taskRun.update({where:{id:run.id},data:{state:'blocked',result:{reason:'quota'}}});await event(tx,run,'quota.exceeded');return;}
  // ROLE-002..008 run on the generic engine under the same lock, pause, tenant and quota checks.
- if(deployment.roleId!=='ROLE-001'){await runRole(tx,run,deployment,used,limits);return;}
+ if(deployment.roleId!=='ROLE-001'){await runRole(tx,run,deployment,used,limits,ent?.keys);return;}
  const input=run.input as {conversation_ref:string;intent_text:string;slot_id?:string};
  // Calendar identifiers and consent are resolved from persisted channel context, never text.
  const appointment=await tx.appointment.findFirst({where:{tenantId:run.tenantId,conversationRef:input.conversation_ref}});
