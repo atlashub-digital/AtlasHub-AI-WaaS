@@ -21,6 +21,7 @@ jobs:
           set -a
           source .env.staging
           set +a
+          node scripts/seed-pilots.mjs
           npm run check
           # API and worker run as the least-privilege role; tests keep the owner connection for fixtures.
           ENTITLEMENTS_ENFORCE=1 DATABASE_URL="$APP_DATABASE_URL" npm run api > /tmp/api.log 2>&1 &
@@ -36,6 +37,7 @@ jobs:
           node --test tests/roles.e2e.mjs
           node --test tests/commerce.e2e.mjs
           node --test tests/entitlements.e2e.mjs
+          node --test tests/workspaces.e2e.mjs
           node scripts/readiness-recovery.mjs
           scripts/backup-restore.sh
       - uses: actions/upload-artifact@v4

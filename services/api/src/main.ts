@@ -9,6 +9,8 @@ import { identity,subject } from './auth.js';
 import { inbound,deploymentInput,transitions } from '../../../packages/contracts/policy.js';
 import { assertRuntimeRole } from '../../../packages/db/context.js';
 import { ROLES,ROLE_BINDINGS } from '../../../packages/roles/index.js';
+import { RateLimiter } from '../../../packages/contracts/rate-limit.js';
+import { Workspaces } from './workspaces.js';
 import { Commerce } from './commerce.js';
 import { allowsRole,enforcing,modulesOf,MODULE_KEYS } from '../../../packages/contracts/entitlements.js';
 import { loadEntitlements } from '../../../packages/db/entitlements.js';
@@ -21,7 +23,7 @@ const as=(who:{tenantId:string;sub:string})=>({tenantId:who.tenantId,userId:who.
 class Api {
  @Get('health') health(){return {status:'ok'};}
  @Get('ready') async ready(){try{await db.$queryRaw`SELECT 1`;await (await queue.client).ping();return {status:'ready'};}catch{throw new ServiceUnavailableException();}}
- @Get('v1/roles') roles(){return db.role.findMany({orderBy:{id:'asc'}});}
+ @Get('v1/roles') async roles(@Req() req:any){await subject(req);return db.role.findMany({orderBy:{id:'asc'}});}
  // Tenants the caller belongs to (tenant switcher). Memberships are read under the caller's own user scope;
  // each tenant name is then read inside that tenant's context, so nothing outside the caller's tenants is visible.
  @Get('v1/me/memberships') async memberships(@Req() req:any){const sub=await subject(req);const rows=await withDb({userId:sub},tx=>tx.membership.findMany({where:{userId:sub,status:'active'},orderBy:{tenantId:'asc'}}));// tenantStatus lets the switcher show suspended tenants honestly (their runs are suspended by the worker).
@@ -71,15 +73,15 @@ class Api {
  @Get('v1/ops/incidents') async incidents(@Req() req:any,@Query('tenant') tenant?:string){const who=await identity(req,tenant);if(!who.role.startsWith('atlas_'))throw new ForbiddenException();return withDb(as(who),tx=>tx.incident.findMany({where:{tenantId:who.tenantId},take:100}));}
  @Get('v1/ops/metrics') async metrics(@Req() req:any,@Query('tenant') tenant?:string){const who=await identity(req,tenant);if(!who.role.startsWith('atlas_'))throw new ForbiddenException();return {runs:await withDb(as(who),tx=>tx.taskRun.groupBy({by:['state'],where:{tenantId:who.tenantId},_count:true}))};}
 }
-@Module({controllers:[Api,Commerce]})class AppModule{}
+@Module({controllers:[Api,Commerce,Workspaces]})class AppModule{}
 await assertRuntimeRole(db);
 const app=await NestFactory.create(AppModule,{rawBody:true,logger:false});
 app.useGlobalFilters({catch(exception:unknown,host:any){const status=exception instanceof HttpException?exception.getStatus():500;host.switchToHttp().getResponse().status(status).json({statusCode:status,error:status>=500?'dependency_or_server_error':exception instanceof HttpException?exception.message:'request_rejected'});}});
 // Behind the HTTPS edge every request arrives from the proxy, so TRUST_PROXY=1 keys the limiter on the address the
 // nearest proxy appended (last X-Forwarded-For entry). The API itself only listens on loopback/the compose network.
 // Reads are limited too (600/min) only behind the public ingress (PUBLIC_INGRESS=1); local suites poll freely.
-const limits=new Map<string,{count:number;until:number}>();
+const limiter=new RateLimiter();
 const LIMIT={POST:120,OTHER:600};
-app.use((req:any,res:any,next:any)=>{const xff=process.env.TRUST_PROXY==='1'?String(req.headers['x-forwarded-for']??'').split(',').map((x:string)=>x.trim()).filter(Boolean).pop():undefined;const kind=req.method==='POST'?'POST':'OTHER';if(kind==='OTHER'&&process.env.PUBLIC_INGRESS!=='1')return next();const key=`${kind}:${xff??req.socket.remoteAddress??'unknown'}`;const now=Date.now();for(const [k,v] of limits)if(v.until<now)limits.delete(k);const entry=limits.get(key)??{count:0,until:now+60000};entry.count++;limits.set(key,entry);if(entry.count>LIMIT[kind]){res.setHeader('Retry-After',String(Math.ceil((entry.until-now)/1000)));return res.status(429).json({error:'rate_limited'});}next();});
+app.use((req:any,res:any,next:any)=>{const xff=process.env.TRUST_PROXY==='1'?String(req.headers['x-forwarded-for']??'').split(',').map((x:string)=>x.trim()).filter(Boolean).pop():undefined;const kind=req.method==='POST'?'POST':'OTHER';if(kind==='OTHER'&&process.env.PUBLIC_INGRESS!=='1')return next();const key=`${kind}:${xff??req.socket.remoteAddress??'unknown'}`;const result=limiter.check(key,LIMIT[kind]);if(!result.allowed){res.setHeader('Retry-After',String(result.retryAfter));return res.status(429).json({error:'rate_limited'});}next();});
 app.enableShutdownHooks();app.use((req:any,res:any,next:any)=>{res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Cache-Control','no-store');next();});
 await app.listen(Number(process.env.PORT??4000),process.env.BIND_HOST??'127.0.0.1');
