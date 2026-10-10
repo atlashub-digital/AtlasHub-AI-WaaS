@@ -72,6 +72,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Caller identity, memberships and active modules per tenant
+         * @description Each tenant is read inside its own RLS context. No memberships → 200 with an empty list.
+         */
+        get: operations["get__v1_me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/entitlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Entitlements and derived modules of one tenant */
+        get: operations["get__v1_entitlements"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/assessments": {
         parameters: {
             query?: never;
@@ -329,6 +366,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ops/entitlements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Grant a product module to a tenant (atlas_owner/atlas_operator, audited) */
+        post: operations["post__v1_ops_entitlements"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/ops/entitlements/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke an operator-granted module (audited) */
+        post: operations["post__v1_ops_entitlements_revoke"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -376,6 +447,54 @@ export interface components {
             name: string;
             /** @description Tenant.status (active, suspended, …). Non-active tenants are listed so the switcher can show them as unavailable; the Core refuses to execute work for them. */
             tenantStatus: string;
+        };
+        /**
+         * @description Product module (entitlement key module.<module>); closed list per packages/contracts/modules.json version.
+         * @enum {string}
+         */
+        ModuleKey: "workforce" | "ami" | "community" | "media";
+        MeMembership: {
+            tenantId: string;
+            /** @enum {string} */
+            role: "tenant_user" | "tenant_admin" | "atlas_operator" | "atlas_engineer" | "atlas_owner";
+            name: string;
+            tenantStatus: string;
+            modules: components["schemas"]["ModuleKey"][];
+        };
+        Me: {
+            sub: string;
+            memberships: components["schemas"]["MeMembership"][];
+        };
+        EntitlementItem: {
+            /** @description mission.<templateId> · product.<productId> · module.<module> */
+            key: string;
+            /** @enum {string} */
+            source: "order" | "subscription" | "trial" | "grant";
+            quantity?: number | null;
+            /** Format: date-time */
+            validFrom: string;
+            /** Format: date-time */
+            validUntil?: string | null;
+            /** @enum {string} */
+            status: "active" | "expired" | "revoked";
+            active: boolean;
+        };
+        Entitlements: {
+            tenantId: string;
+            /** @description ENTITLEMENTS_ENFORCE=1 on this deployment */
+            enforced: boolean;
+            modules: components["schemas"]["ModuleKey"][];
+            items: components["schemas"]["EntitlementItem"][];
+        };
+        ModuleGrant: {
+            tenant: string;
+            module: components["schemas"]["ModuleKey"];
+            /** Format: date-time */
+            validUntil?: string;
+        };
+        ModuleRevoke: {
+            tenant: string;
+            module: components["schemas"]["ModuleKey"];
         };
     };
     responses: never;
@@ -586,6 +705,84 @@ export interface operations {
             };
             /** @description Missing or invalid verified identity */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get__v1_me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Missing or invalid verified identity */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get__v1_entitlements: {
+        parameters: {
+            query?: {
+                /** @description Required when the caller has more than one membership */
+                tenant?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Entitlements"];
+                };
+            };
+            /** @description Missing or invalid verified identity */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description No membership in the tenant */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -897,7 +1094,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Policy or role denied */
+            /** @description Policy or role denied; entitlement_required when ENTITLEMENTS_ENFORCE=1 and no active entitlement covers roleId */
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -1623,6 +1820,106 @@ export interface operations {
             };
             /** @description Mutation rate limit */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post__v1_ops_entitlements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModuleGrant"];
+            };
+        };
+        responses: {
+            /** @description Granted (source grant) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid verified identity */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an Atlas operator of the tenant */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    post__v1_ops_entitlements_revoke: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModuleRevoke"];
+            };
+        };
+        responses: {
+            /** @description Revoked count */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid verified identity */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not an Atlas operator of the tenant */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

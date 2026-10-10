@@ -6,3 +6,4 @@ dist/
 *.log
 artifacts/
 .supabase-users
+dump.rdb

@@ -14,3 +14,4 @@ npm run db:seed
 npm run build
 node scripts/seed-roles.mjs
 node scripts/seed-commerce.mjs
+node scripts/seed-pilots.mjs

@@ -5,6 +5,7 @@ import { INJECTION, commonReplies, fill } from '../../../packages/roles/common.j
 import { LOCALES, type Finish, type Locale, type PlaybookContext, type RoleDefinition, type Sandbox, type ToolOutcome } from '../../../packages/roles/types.js';
 import { classifyIntent, draftText, llmEnabled } from './llm.js';
 import { callN8nTool } from './n8n.js';
+import { allowsTool } from '../../../packages/contracts/entitlements.js';
 
 // Raised for every policy decision that must stop the run; the executor rolls the transaction back
 // and records the run as blocked with this reason (never with raw input text).
@@ -54,7 +55,8 @@ async function spentToday(tx: Tx, tenantId: string) {
  return Number(agg._sum.costEstimate ?? 0);
 }
 
-export async function runRole(tx: Tx, run: Run, deployment: Deployment, used: number, limits: { dailyRuns: number; alertAt: number }) {
+// entitlementKeys is set only when ENTITLEMENTS_ENFORCE=1: module-owned tools (ami.*, …) then need module.<m>.
+export async function runRole(tx: Tx, run: Run, deployment: Deployment, used: number, limits: { dailyRuns: number; alertAt: number }, entitlementKeys?: string[]) {
  const role = ROLES[deployment.roleId];
  if (!role) throw new RolePolicyError('role_not_enabled');
  const config = deployment.config as { handoff_queue: string; locale?: string; n8n_tools?: string[] };
@@ -79,6 +81,7 @@ export async function runRole(tx: Tx, run: Run, deployment: Deployment, used: nu
   const spec = role.tools[toolId];
   if (!spec) throw new RolePolicyError('tool_unknown');
   if (spec.policy === 'forbidden') throw new RolePolicyError('forbidden_action');
+  if (entitlementKeys && !allowsTool(entitlementKeys, toolId)) throw new RolePolicyError('entitlement_missing');
   const parsed = spec.input.safeParse(input);
   if (!parsed.success) throw new RolePolicyError('invalid_tool_input');
   const granted = await tx.toolGrant.findFirst({ where: { tenantId: run.tenantId, deploymentId: run.deploymentId, toolId, enabled: true } });

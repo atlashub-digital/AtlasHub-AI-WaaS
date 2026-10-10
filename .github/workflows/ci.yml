@@ -23,8 +23,8 @@ jobs:
           set +a
           npm run check
           # API and worker run as the least-privilege role; tests keep the owner connection for fixtures.
-          DATABASE_URL="$APP_DATABASE_URL" npm run api > /tmp/api.log 2>&1 &
-          DATABASE_URL="$APP_DATABASE_URL" npm run worker > /tmp/worker.log 2>&1 &
+          ENTITLEMENTS_ENFORCE=1 DATABASE_URL="$APP_DATABASE_URL" npm run api > /tmp/api.log 2>&1 &
+          ENTITLEMENTS_ENFORCE=1 DATABASE_URL="$APP_DATABASE_URL" npm run worker > /tmp/worker.log 2>&1 &
           for attempt in $(seq 1 30); do
             if curl -fsS http://127.0.0.1:4000/ready; then break; fi
             sleep 1
@@ -35,6 +35,7 @@ jobs:
           node --test tests/runtime-rls.mjs
           node --test tests/roles.e2e.mjs
           node --test tests/commerce.e2e.mjs
+          node --test tests/entitlements.e2e.mjs
           node scripts/readiness-recovery.mjs
           scripts/backup-restore.sh
       - uses: actions/upload-artifact@v4
