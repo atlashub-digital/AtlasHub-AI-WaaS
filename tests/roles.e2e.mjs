@@ -107,3 +107,12 @@ test('cross-cutting: injection never reaches tools, tenants stay isolated, repli
  const es=await wait(await send('008','¿Cuáles son las fases del proceso?',{},{locale:'es'}));assert.match(es.result.reply,/^El proceso/);
 });
 test.after(async()=>{await db.sandboxRecord.deleteMany({where:{tenantId:'tenant-A',key:{in:created}}});await db.$disconnect();});
+test('me/memberships lists only the caller\'s tenants with names',async()=>{
+ const a=await api('/v1/me/memberships','admin-A');assert.equal(a.status,200);assert.deepEqual(a.body.map(m=>m.tenantId),['tenant-A']);assert.equal(a.body[0].name,'Empresa Fictícia A');assert.equal(a.body[0].tenantStatus,'active');
+ const none=await api('/v1/me/memberships','nobody-'+id());assert.equal(none.status,200);assert.deepEqual(none.body,[]);
+});
+test('me/memberships shows a suspended tenant as suspended instead of an ordinary workspace',async()=>{
+ await db.tenant.update({where:{id:'tenant-B'},data:{status:'suspended'}});
+ try{const b=await api('/v1/me/memberships','admin-B');assert.equal(b.status,200);assert.deepEqual(b.body.map(m=>[m.tenantId,m.tenantStatus]),[['tenant-B','suspended']]);}
+ finally{await db.tenant.update({where:{id:'tenant-B'},data:{status:'active'}});}
+});

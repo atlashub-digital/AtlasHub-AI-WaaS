@@ -52,6 +52,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/memberships": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Active memberships of the caller (tenant switcher)
+         * @description Lists only the caller's own active memberships (RLS own_memberships). A verified identity without memberships receives an empty list, not 403.
+         */
+        get: operations["get__v1_me_memberships"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/assessments": {
         parameters: {
             query?: never;
@@ -348,6 +368,15 @@ export interface components {
                 alertAt: number;
             };
         };
+        MembershipSummary: {
+            tenantId: string;
+            /** @enum {string} */
+            role: "tenant_user" | "tenant_admin" | "atlas_operator" | "atlas_engineer" | "atlas_owner";
+            /** @description Tenant display name, read inside that tenant's RLS context; falls back to tenantId */
+            name: string;
+            /** @description Tenant.status (active, suspended, …). Non-active tenants are listed so the switcher can show them as unavailable; the Core refuses to execute work for them. */
+            tenantStatus: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -523,6 +552,40 @@ export interface operations {
             };
             /** @description Mutation rate limit */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Dependency unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get__v1_me_memberships: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Success */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MembershipSummary"][];
+                };
+            };
+            /** @description Missing or invalid verified identity */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

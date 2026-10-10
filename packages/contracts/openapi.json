@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AtlasHub AI Workforce staging API",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "servers": [
     {
@@ -166,6 +166,39 @@
             }
           }
         }
+      },
+      "MembershipSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "tenantId",
+          "role",
+          "name",
+          "tenantStatus"
+        ],
+        "properties": {
+          "tenantId": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "tenant_user",
+              "tenant_admin",
+              "atlas_operator",
+              "atlas_engineer",
+              "atlas_owner"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "Tenant display name, read inside that tenant's RLS context; falls back to tenantId"
+          },
+          "tenantStatus": {
+            "type": "string",
+            "description": "Tenant.status (active, suspended, …). Non-active tenants are listed so the switcher can show them as unavailable; the Core refuses to execute work for them."
+          }
+        }
       }
     }
   },
@@ -247,6 +280,39 @@
           },
           "429": {
             "description": "Mutation rate limit"
+          },
+          "503": {
+            "description": "Dependency unavailable"
+          }
+        }
+      }
+    },
+    "/v1/me/memberships": {
+      "get": {
+        "operationId": "get__v1_me_memberships",
+        "summary": "Active memberships of the caller (tenant switcher)",
+        "description": "Lists only the caller's own active memberships (RLS own_memberships). A verified identity without memberships receives an empty list, not 403.",
+        "security": [
+          {
+            "Bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MembershipSummary"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid verified identity"
           },
           "503": {
             "description": "Dependency unavailable"
